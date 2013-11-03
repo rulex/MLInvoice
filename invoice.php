@@ -35,8 +35,15 @@ require_once "miscfuncs.php";
 
 $intInvoiceId = getRequest('id', FALSE);
 $printTemplate = getRequest('template', 1);
+$receiptDate = getRequest( 'date', FALSE );
 
-if (!$intInvoiceId) 
+$date = " ";
+if( strlen( $receiptDate ) == 8 ) {
+	//echo "lol";
+	$date = " AND row_date=". $receiptDate . " ";
+}
+
+if (!$intInvoiceId)
   return;
 
 $res = mysql_param_query('SELECT filename, parameters, output_filename from {prefix}print_template WHERE id=?', array($printTemplate));
@@ -72,7 +79,7 @@ $strQuery =
     "FROM {prefix}invoice_row ir ".
     "LEFT OUTER JOIN {prefix}row_type rt ON rt.id = ir.type_id ".
     "LEFT OUTER JOIN {prefix}product pr ON ir.product_id = pr.id ".
-    "WHERE ir.invoice_id=? AND ir.deleted=0 ORDER BY ir.order_no, row_date, pr.product_name DESC, ir.description DESC";
+    "WHERE ir.invoice_id=? AND ir.deleted=0 ". $date ." ORDER BY ir.order_no, row_date, pr.product_name DESC, ir.description DESC";
 $intRes = mysql_param_query($strQuery, array($intInvoiceId));
 $invoiceRowData = array();
 while ($row = mysql_fetch_assoc($intRes)) 
@@ -85,5 +92,5 @@ if (sesWriteAccess()) {
 }
   
 $printer = instantiateInvoicePrinter(trim($printTemplateFile));
-$printer->init($intInvoiceId, $printParameters, $printOutputFileName, $senderData, $recipientData, $invoiceData, $invoiceRowData);
+$printer->init($intInvoiceId, $printParameters, $printOutputFileName, $senderData, $recipientData, $invoiceData, $invoiceRowData, $receiptDate);
 $printer->printInvoice();

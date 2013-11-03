@@ -37,6 +37,8 @@ abstract class InvoicePrinterBase
   protected $addressXOffset = 0;
   protected $addressYOffset = 0;
 
+	protected $date;
+
   public function __construct()
   {
   }
@@ -46,8 +48,10 @@ abstract class InvoicePrinterBase
     return $this->readOnlySafe;
   }
 
-  public function init($invoiceId, $printParameters, $outputFileName, $senderData, $recipientData, $invoiceData, $invoiceRowData)
+  public function init($invoiceId, $printParameters, $outputFileName, $senderData, $recipientData, $invoiceData, $invoiceRowData, $date )
   {
+		if( strlen( $date ) == 8 ) { $this->date = $date; }
+		else { $this->date = null; }
     $this->invoiceId = $invoiceId;
     $parameters = explode(',', $printParameters);
     $this->printStyle = $parameters[0];
@@ -347,7 +351,7 @@ abstract class InvoicePrinterBase
     $pdf->Cell(60, 5, $invoiceData['invoice_no'], 0, 1);
     $pdf->SetX(115);
     $pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Date"] . ': ', 0, 0, 'R');
-    $strInvoiceDate = $this->_formatDate($invoiceData['invoice_date']);
+    $strInvoiceDate = ( $this->date ) ? $this->_formatDate( $this->date ) : $this->_formatDate($invoiceData['invoice_date']);
     $strDueDate = $this->_formatDate($invoiceData['due_date']);
     $pdf->Cell(60, 5, $strInvoiceDate, 0, 1);
     if ($this->printStyle == 'invoice')
