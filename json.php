@@ -103,6 +103,10 @@ case 'get_invoice_rows':
   printJSONRecords('invoice_row', 'invoice_id', 'order_no');
   break;
 
+case 'get_invoice_dates':
+  printInvoiceDates('invoice_row', 'invoice_id', 'order_no');
+  break;
+
 case 'put_invoice_row':
   saveJSONRecord('invoice_row', 'invoice_id');
   break;
@@ -254,6 +258,49 @@ function printJSONRecord($table, $id = FALSE, $warnings = null)
     $row['warnings'] = $warnings;
     echo json_encode($row);
   }
+}
+
+function printInvoiceDates( $table, $parentIdCol, $sort ) {
+  $query = "SELECT row_date FROM {prefix}$table";
+  $where = '';
+  $params = array();
+  $id = getRequest('parent_id', '');
+  if( $id && $parentIdCol )
+  {
+    $where .= " WHERE $parentIdCol=?";
+    $params[] = $id;
+  }
+  if( !getSetting('show_deleted_records' ) )
+  {
+    if( $where )
+      $where .= " AND deleted=0";
+    else
+      $where = " WHERE deleted=0";
+  }
+
+  $query .= $where;
+	$query .= " group by row_date ";
+  if( $sort )
+    $query .= " order by $sort";
+
+  $res = mysql_param_query( $query, $params );
+  header( 'Content-Type: application/json' );
+  echo "{\"records\":[";
+  $first = true;
+  while ($row = mysql_fetch_assoc($res))
+  {
+    if ($first)
+    {
+      echo "\n";
+      $first = false;
+    }
+    else
+      echo ",\n";
+    if ($table == 'users')
+      unset($row['password']);
+    echo json_encode($row);
+  }
+  echo "\n]}";
 }
 
 function printJSONRecords($table, $parentIdCol, $sort)

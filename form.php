@@ -260,6 +260,7 @@ function createForm($strFunc, $strList, $strForm)
       if ($rowOpen)
         echo "        </tr>\n";
       echo "      </table>\n      </form>\n";
+			echo '<div id="datebuttons"></div>';
       $haveChildForm = true;
       createIForm($astrFormElements, $elem, isset($intKeyValue) ? $intKeyValue : 0, $blnNew);
       break;
@@ -303,6 +304,7 @@ function createForm($strFunc, $strList, $strForm)
 ?>
     </div>
 
+
 <script type="text/javascript">
 /* <![CDATA[ */
 var globals = {};
@@ -342,6 +344,14 @@ function errormsg(msg, timeout)
 }
 
 $(document).ready(function() {
+  $.getJSON( 'json.php?func=get_invoice_dates&parent_id=<?php echo $intKeyValue?>', function( json ) {
+		console.log( json );
+		for( var i in json.records ) {
+			var d = json.records[i];
+			console.log( d.row_date );
+			$( '#datebuttons' ).append( '<a class="formbuttonlink ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" href="invoice.php?id=2&template=3&func=open_invoices&date='+ d.row_date +'"><span class="ui-button-text">Receipt '+ d.row_date +'</span></a>' );
+		}
+	} )
 <?php
   if ($strMessage)
   {
