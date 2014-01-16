@@ -344,7 +344,7 @@ function errormsg(msg, timeout)
 }
 
 $(document).ready(function() {
-  $.getJSON( 'json.php?func=get_invoice_dates&parent_id=<?php echo $intKeyValue?>', function( json ) {
+  $.getJSON( 'json.php?func=get_invoice_dates&parent_id=<?php echo isset($intKeyValue) ? $intKeyValue : "no" ?>', function( json ) {
 		console.log( json );
 		for( var i in json.records ) {
 			var d = json.records[i];
