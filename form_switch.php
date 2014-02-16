@@ -380,13 +380,11 @@ EOS;
     array(
       'name' => 'internal_info', 'label' => $GLOBALS['locInternalInfo'], 'type' => 'AREA', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
 
-    !sesWriteAccess() ? array('name' => 'refundinvoice', 'label' => '', 'type' => 'FILLER', 'position' => 1) : array(
-      'name' => 'refundinvoice', 'label' => $GLOBALS['locRefundInvoice'], 'type' => 'BUTTON', 'style' => 'redirect', 'listquery' => "copy_invoice.php?func=$strFunc&list=$strList&id=_ID_&refund=1", 'position' => 1, 'default' => FALSE, 'allow_null' => true ),
+    //!sesWriteAccess() ? array('name' => 'refundinvoice', 'label' => '', 'type' => 'FILLER', 'position' => 1) : array( 'name' => 'refundinvoice', 'label' => $GLOBALS['locRefundInvoice'], 'type' => 'BUTTON', 'style' => 'redirect', 'listquery' => "copy_invoice.php?func=$strFunc&list=$strList&id=_ID_&refund=1", 'position' => 1, 'default' => FALSE, 'allow_null' => true ),
     $arrRefundedInvoice,
     isset($printButtons[0]) ? $printButtons[0] : array(),
     isset($printButtons2[0]) ? $printButtons2[0] : array(),
-    !sesWriteAccess() ? array('name' => 'addreminderfees', 'label' => '', 'type' => 'FILLER', 'position' => 1) : array(
-      'name' => 'addreminderfees', 'label' => $GLOBALS['locAddReminderFees'], 'type' => 'JSBUTTON', 'style' => 'redirect', 'listquery' => $addReminderFees, 'position' => 1, 'default' => FALSE, 'allow_null' => true ),
+    //!sesWriteAccess() ? array('name' => 'addreminderfees', 'label' => '', 'type' => 'FILLER', 'position' => 1) : array( 'name' => 'addreminderfees', 'label' => $GLOBALS['locAddReminderFees'], 'type' => 'JSBUTTON', 'style' => 'redirect', 'listquery' => $addReminderFees, 'position' => 1, 'default' => FALSE, 'allow_null' => true ),
     $arrRefundingInvoice,
     isset($printButtons[1]) ? $printButtons[1] : array(),
     isset($printButtons2[1]) ? $printButtons2[1] : array(),

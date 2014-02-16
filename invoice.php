@@ -38,9 +38,9 @@ $printTemplate = getRequest('template', 1);
 $receiptDate = getRequest( 'date', FALSE );
 
 $date = " ";
-if( strlen( $receiptDate ) == 8 ) {
-	//echo "lol";
-	$date = " AND row_date=". $receiptDate . " ";
+if( $receiptDate > 9999999 && $receiptDate < 100000000 ) {
+	$receiptDate = $receiptDate;
+	$date = " AND row_date=$receiptDate ";
 }
 
 if (!$intInvoiceId)
@@ -81,7 +81,8 @@ $strQuery =
     "FROM {prefix}invoice_row ir ".
     "LEFT OUTER JOIN {prefix}row_type rt ON rt.id = ir.type_id ".
     "LEFT OUTER JOIN {prefix}product pr ON ir.product_id = pr.id ".
-    "WHERE ir.invoice_id=? AND ir.deleted=0 ". $date ." ORDER BY ir.order_no, row_date, pr.product_name DESC, ir.description DESC";
+    //"WHERE ir.invoice_id=? AND ir.deleted=0 ". $date ." ORDER BY ir.order_no, ir.row_date, pr.product_name DESC, ir.description DESC";
+    "WHERE ir.invoice_id=? $date ORDER BY ir.order_no, row_date, pr.product_name DESC, ir.description DESC";
 $intRes = mysql_param_query($strQuery, array($intInvoiceId));
 $invoiceRowData = array();
 while ($row = mysql_fetch_assoc($intRes))

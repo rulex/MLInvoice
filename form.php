@@ -306,7 +306,6 @@ function createForm($strFunc, $strList, $strForm)
 
 
 <script type="text/javascript">
-/* <![CDATA[ */
 var globals = {};
 
 $(window).bind('beforeunload', function(e) {
@@ -342,16 +341,19 @@ function errormsg(msg, timeout)
     time: typeof(timeout) != 'undefined' ? timeout : 5000
   });
 }
-
 $(document).ready(function() {
+<?php
+	if (isset($_REQUEST['id'])) {
+?>
   $.getJSON( 'json.php?func=get_invoice_dates&parent_id=<?php echo isset($intKeyValue) ? $intKeyValue : "no" ?>', function( json ) {
 		console.log( json );
 		for( var i in json.records ) {
 			var d = json.records[i];
 			console.log( d.row_date );
-			$( '#datebuttons' ).append( '<a class="formbuttonlink ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" href="invoice.php?id=2&template=3&func=open_invoices&date='+ d.row_date +'"><span class="ui-button-text">Receipt '+ d.row_date +'</span></a>' );
+			$( '#datebuttons' ).append( '<a class="formbuttonlink ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" href="invoice.php?id=<?php echo $_GET['id']; ?>&template=3&func=open_invoices&date='+ d.row_date +'"><span class="ui-button-text">Forsedel '+ d.row_date +'</span></a>' );
 		}
-	} )
+	} );
+<?php } ?>
 <?php
   if ($strMessage)
   {
@@ -491,7 +493,6 @@ function popup_dialog(url, on_close, dialog_title, event, width, height)
   return true;
 }
 
-/* ]]> */
 </script>
 
 <?php
