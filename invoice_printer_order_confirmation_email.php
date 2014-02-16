@@ -1,10 +1,11 @@
 <?php
 
-require_once 'invoice_printer_base.php';
+require_once 'invoice_printer_order_confirmation.php';
 require_once 'htmlfuncs.php';
 require_once 'miscfuncs.php';
 
-class InvoicePrinterEmail extends InvoicePrinterBase
+// TODO: this is copy-paste from invoice_printer_email.php, should be refactored
+class InvoicePrinterOrderConfirmationEmail extends InvoicePrinterOrderConfirmation
 {
   protected $emailFrom = '';
   protected $emailTo = '';
@@ -115,11 +116,6 @@ class InvoicePrinterEmail extends InvoicePrinterBase
 
     $result = mail($this->mimeEncodeAddress($this->emailTo), $this->mimeEncodeHeaderValue($this->emailSubject), $messageBody, $this->headersToStr($headers), '-f ' . $this->extractAddress($this->emailFrom));
 
-    if ($result && $invoiceData['state_id'] == 1)
-    {
-      // Mark invoice sent
-      mysql_param_query('UPDATE {prefix}invoice SET state_id=2 WHERE id=?', array($this->invoiceId));
-    }
     if ($result) {
       $_SESSION['formMessage'] = 'EmailSent';
     } else {

@@ -110,7 +110,7 @@ function saveFormData($table, &$primaryKey, &$formElements, &$values, &$warnings
       $missingValues .= $elem['label'];
       continue;
     }
-    $value = isset($values[$name]) ? $values[$name] : FALSE;
+    $value = isset($values[$name]) ? $values[$name] : getFormDefaultValue($elem, $parentKey);
 
     if ($type == 'PASSWD' && !$value)
       continue; // Don't save empty password
@@ -146,10 +146,11 @@ function saveFormData($table, &$primaryKey, &$formElements, &$values, &$warnings
     case 'INT':
     case 'HID_INT':
     case 'SECHID_INT':
-      $arrValues[] = $value !== '' ? str_replace(",", ".", $value) : ($elem['allow_null'] ? NULL : 0);
+      $arrValues[] = ($value !== '' && $value !== false) ? str_replace(",", ".", $value) : ($elem['allow_null'] ? NULL : 0);
       break;
     case 'LIST':
-      $arrValues[] = $value !== '' ? str_replace(",", ".", $value) : NULL;
+    case 'SEARCHLIST':
+      $arrValues[] = isset($values[$name]) ? ($value !== '' ? str_replace(",", ".", $value) : NULL) : NULL;
       break;
     case 'CHECK':
       $arrValues[] = $value ? 1 : 0;
