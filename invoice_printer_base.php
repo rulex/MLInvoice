@@ -490,12 +490,12 @@ abstract class InvoicePrinterBase
     else {
         $pdf->Cell($nameColWidth, 5, $GLOBALS['locPDFRowName'], 0, 0, 'L');
     }
-    if ($this->printStyle != 'dispatch')
-    {
+    //if ($this->printStyle != 'dispatch')
+    //{
       $pdf->Cell(17, 5, $GLOBALS['locPDFRowPrice'], 0, 0, 'R');
       if ($this->discountedRows)
         $pdf->Cell(12, 5, $GLOBALS['locPDFRowDiscount'], 0, 0, 'R');
-    }
+    //}
     $pdf->Cell(20, 5, $GLOBALS['locPDFRowPieces'], 0, 0, 'R');
     if ($this->printStyle != 'dispatch')
     {
@@ -568,13 +568,13 @@ abstract class InvoicePrinterBase
         {
           $pdf->SetX($nameColWidth + $left);
         }
-        if ($this->printStyle != 'dispatch')
-        {
+        //if ($this->printStyle != 'dispatch')
+        //{
           $decimals = isset($row['price_decimals']) ? $row['price_decimals'] : 2;
           $pdf->Cell(17, 5, $this->_formatCurrency($row['price'], $decimals), 0, 0, 'R');
           if ($this->discountedRows)
             $pdf->Cell(12, 5, (isset($row['discount']) && $row['discount'] != '0') ? $this->_formatCurrency($row['discount'], 2, true) : '', 0, 0, 'R');
-        }
+        //}
         $pdf->Cell(13, 5, $this->_formatNumber($row['pcs'], 2, true), 0, 0, 'R');
         $pdf->Cell(7, 5, isset($GLOBALS["locPDF{$row['type']}"]) ? $GLOBALS["locPDF{$row['type']}"] : $row['type'], 0, 0, 'L');
         if ($this->printStyle != 'dispatch')
