@@ -357,7 +357,7 @@ $(document).ready(function() {
 		for( var i in json.records ) {
 			var d = json.records[i];
 			console.log( d.row_date );
-			$( '#datebuttons' ).append( '<a class="formbuttonlink ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" href="invoice.php?id=<?php echo $_GET['id']; ?>&template=3&func=open_invoices&date='+ d.row_date +'"><span class="ui-button-text">Forsedel '+ d.row_date +'</span></a>' );
+			$( '#datebuttons' ).append( '<a class="formbuttonlink ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" href="invoice.php?id=<?php echo $_GET['id']; ?>&template=2&func=open_invoices&date='+ d.row_date +'"><span class="ui-button-text">Forsedel '+ d.row_date +'</span></a>' );
 		}
 	} );
 <?php } ?>
