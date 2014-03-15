@@ -346,9 +346,9 @@ abstract class InvoicePrinterBase
       $pdf->Cell(40, 5, $GLOBALS['locPDFClientVATID'] . ': ', 0, 0, 'R');
       $pdf->Cell(60, 5, $recipientData['company_id'], 0, 1);
     }
-    $pdf->SetX(115);
-    $pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Number"] . ': ', 0, 0, 'R');
-    $pdf->Cell(60, 5, $invoiceData['invoice_no'], 0, 1);
+    //$pdf->SetX(115);
+    //$pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Number"] . ': ', 0, 0, 'R');
+    //$pdf->Cell(60, 5, $invoiceData['invoice_no'], 0, 1);
     $pdf->SetX(115);
     $pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Date"] . ': ', 0, 0, 'R');
     $strInvoiceDate = ( $this->date ) ? $this->_formatDate( $this->date ) : $this->_formatDate($invoiceData['invoice_date']);
