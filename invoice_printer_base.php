@@ -312,6 +312,7 @@ abstract class InvoicePrinterBase
     $pdf = $this->pdf;
     $invoiceData = $this->invoiceData;
     $recipientData = $this->recipientData;
+		//print_r( $recipientData );
 
     if ($this->printStyle == 'dispatch')
       $locStr = 'DispatchNote';
@@ -346,9 +347,10 @@ abstract class InvoicePrinterBase
       $pdf->Cell(40, 5, $GLOBALS['locPDFClientVATID'] . ': ', 0, 0, 'R');
       $pdf->Cell(60, 5, $recipientData['company_id'], 0, 1);
     }
-    //$pdf->SetX(115);
-    //$pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Number"] . ': ', 0, 0, 'R');
-    //$pdf->Cell(60, 5, $invoiceData['invoice_no'], 0, 1);
+    $pdf->SetX(115);
+    $pdf->Cell(40, 5, 'Asiakas Kund' . ': ', 0, 0, 'R');
+    $pdf->Cell(60, 5, $recipientData['company_name'], 0, 1);
+		//
     $pdf->SetX(115);
     $pdf->Cell(40, 5, $GLOBALS["locPDF${locStr}Date"] . ': ', 0, 0, 'R');
     $strInvoiceDate = ( $this->date ) ? $this->_formatDate( $this->date ) : $this->_formatDate($invoiceData['invoice_date']);
@@ -437,6 +439,7 @@ abstract class InvoicePrinterBase
   {
     $pdf = $this->pdf;
     $invoiceData = $this->invoiceData;
+		//print_r( $invoiceData );
 
     if ($this->separateStatement)
     {
@@ -497,6 +500,9 @@ abstract class InvoicePrinterBase
         $pdf->Cell(12, 5, $GLOBALS['locPDFRowDiscount'], 0, 0, 'R');
     //}
     $pdf->Cell(20, 5, $GLOBALS['locPDFRowPieces'], 0, 0, 'R');
+        //$pdf->MultiCell(20, 5, $GLOBALS['locPDFRowTotalVATLess'], 0, 'R', 0, 0);
+        //$pdf->Cell(15, 5, $GLOBALS['locPDFRowVATPercent'], 0, 0, 'R');
+        //$pdf->Cell(15, 5, $GLOBALS['locPDFRowTax'], 0, 0, 'R');
     if ($this->printStyle != 'dispatch')
     {
       if ($this->senderData['vat_registered'])
@@ -549,8 +555,15 @@ abstract class InvoicePrinterBase
 
       // Sums
       list($rowSum, $rowVAT, $rowSumVAT) = calculateRowSum($row['price'], $row['pcs'], $row['vat'], $row['vat_included'], $row['discount']);
-      if ($row['vat_included'])
+      if ($row['vat_included']) {
         $row['price'] /= (1 + $row['vat'] / 100);
+				$vat_incl_price = $row['price'];
+				$vat_incl_price *= (1 + $row['vat'] / 100);
+			}
+			else {
+				$vat_incl_price = $row['price'];
+				$vat_incl_price /= ( 1 + $row['vat'] / 100 );
+			}
 
       if ($row['price'] == 0 && $row['pcs'] == 0)
       {
@@ -568,13 +581,16 @@ abstract class InvoicePrinterBase
         {
           $pdf->SetX($nameColWidth + $left);
         }
-        //if ($this->printStyle != 'dispatch')
-        //{
+        if ($this->printStyle != 'dispatch')
+        {
           $decimals = isset($row['price_decimals']) ? $row['price_decimals'] : 2;
-          $pdf->Cell(17, 5, $this->_formatCurrency($row['price'], $decimals), 0, 0, 'R');
+          $pdf->Cell(17, 5, $this->_formatCurrency( $vat_incl_price, $decimals ), 0, 0, 'R');
           if ($this->discountedRows)
             $pdf->Cell(12, 5, (isset($row['discount']) && $row['discount'] != '0') ? $this->_formatCurrency($row['discount'], 2, true) : '', 0, 0, 'R');
-        //}
+        }
+				else if ($this->printStyle == 'dispatch') {
+					$pdf->Cell(20, 5, $this->_formatCurrency( $vat_incl_price ), 0, 0, 'R');
+				}
         $pdf->Cell(13, 5, $this->_formatNumber($row['pcs'], 2, true), 0, 0, 'R');
         $pdf->Cell(7, 5, isset($GLOBALS["locPDF{$row['type']}"]) ? $GLOBALS["locPDF{$row['type']}"] : $row['type'], 0, 0, 'L');
         if ($this->printStyle != 'dispatch')
