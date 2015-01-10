@@ -72,18 +72,19 @@ $astrMainButtons = array (
 
 ?>
 
-<body>
-<div class="pagewrapper ui-widget-content">
-<div class="ui-widget">
-  <div id="maintabs" class="navi ui-widget-header ui-tabs">
-    <ul class="ui-tabs-nav ui-helper-clearfix ui-corner-all">
+<body style="padding-top: 60px;">
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	<div class="container">
+		<div id="maintabs" class="navbar-collapse collapse">
+			<ul class="nav navbar-nav">
+
 <?php
 foreach ($astrMainButtons as $button)
 {
-  $strButton = '<li class="functionlink ui-state-default ui-corner-top';
+  $strButton = '<li class="';
   if ($button['action'] == $strFunc || ($button['action'] == 'open_invoices' && $strFunc == 'invoices'))
-    $strButton .= ' ui-tabs-selected ui-state-active';
-  $strButton .= '"><a class="functionlink" href="?func=' . $button['action'] . '">';
+    $strButton .= ' active';
+  $strButton .= '"><a class="" href="?func=' . $button['action'] . '">';
   $strButton .= $GLOBALS[$button['title']] . '</a></li>';
 
   if (!isset($button['levels_allowed']) || sesAccessLevel($button['levels_allowed']) || sesAdminAccess())
@@ -92,8 +93,12 @@ foreach ($astrMainButtons as $button)
   }
 }
 ?>
-    </ul>
+			</ul>
+		</div>
   </div>
+</div>
+
+<div class="container">
 <?php
 
 $level = 1;
@@ -112,8 +117,12 @@ foreach ($arrHistory as $arrHE)
 }
 
 ?>
+  <div class="row">
+  <div class="col-sm-12">
   <div class="breadcrumbs">
     <?php echo $strBreadcrumbs . "\n"?>
+  </div>
+  </div>
   </div>
 <?php
 if ($strFunc == 'open_invoices' && !$strForm) {

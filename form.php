@@ -145,22 +145,26 @@ function createForm($strFunc, $strList, $strForm)
   }
 ?>
 
-  <div id="popup_dlg" style="display: none; width: 900px; overflow: hidden">
-    <iframe id="popup_dlg_iframe" src="about:blank" style="width: 100%; height: 100%; overflow: hidden; border: 0"></iframe>
-  </div>
+<div class="row-fluid">
+	<div class="col-sm-12">
+		<div id="popup_dlg" style="display: none; width: 900px; overflow: hidden">
+			<iframe id="popup_dlg_iframe" src="about:blank" style="width: 100%; height: 100%; overflow: hidden; border: 0"></iframe>
+		</div>
+	</div>
 <?php if (isset($popupHTML)) echo $popupHTML;?>
 
   <div class="form_container">
 
 <?php createFormButtons($blnNew, $copyLinkOverride, true, $readOnlyForm) ?>
-    <div class="form">
+	<div class="row">
+    <div class="form col-sm-12">
       <form method="post" name="admin_form" id="admin_form">
       <input type="hidden" name="copyact" value="0">
       <input type="hidden" name="newact" value="<?php echo $blnNew ? 1 : 0?>">
       <input type="hidden" name="deleteact" value="0">
       <input type="hidden" name="redirect" id="redirect" value="">
       <input type="hidden" id="record_id" name="id" value="<?php echo (isset($intKeyValue) && $intKeyValue) ? $intKeyValue : '' ?>">
-      <table>
+      <table class="table table-condensed">
 <?php
   $haveChildForm = false;
   $prevPosition = false;
@@ -178,7 +182,7 @@ function createForm($strFunc, $strList, $strForm)
       $rowOpen = false;
   ?>
         <tr>
-          <td class="sublabel ui-widget-header ui-state-default ui-state-active" colspan="4">
+          <td class="sublabel ui-widget-header ui-state-default ui-state-active">
             <?php echo $elem['label']?>
           </td>
         </tr>
@@ -233,7 +237,7 @@ function createForm($strFunc, $strList, $strForm)
     {
       $intColspan = 1;
 ?>
-          <td class="button">
+          <td class="btn btn-xs btn-default">
             <?php echo htmlFormElement($elem['name'], $elem['type'], $astrValues[$elem['name']], $elem['style'], $elem['listquery'], $fieldMode, $elem['parent_key'],$elem['label'], array(), isset($elem['elem_attributes']) ? $elem['elem_attributes'] : '', isset($elem['options']) ? $elem['options'] : null)
 ?>
           </td>
@@ -267,6 +271,8 @@ function createForm($strFunc, $strList, $strForm)
       if ($rowOpen)
         echo "        </tr>\n";
       echo "      </table>\n      </form>\n";
+      echo "		</div>\n";
+      echo "		</div>\n";
       $haveChildForm = true;
       createIForm($astrFormElements, $elem, isset($intKeyValue) ? $intKeyValue : 0, $blnNew, $strForm);
       break;
@@ -285,7 +291,7 @@ function createForm($strFunc, $strList, $strForm)
       else
       {
 ?>
-          <td id="<?php echo htmlentities($elem['name']) . '_label' ?>" class="label"<?php if (isset($elem['title'])) echo ' title="' . $elem['title'] . '"'?>><?php echo $elem['label']?></td>
+          <td id="<?php echo htmlentities($elem['name']) . '_label' ?>" class=""<?php if (isset($elem['title'])) echo ' title="' . $elem['title'] . '"'?>><?php echo $elem['label']?></td>
 <?php
       }
 ?>
@@ -308,7 +314,6 @@ function createForm($strFunc, $strList, $strForm)
     echo "      </table>\n      </form>\n";
   }
 ?>
-    </div>
 
 <script type="text/javascript">
 /* <![CDATA[ */
@@ -667,8 +672,8 @@ function init_rows()
   if (sesWriteAccess())
   {
 ?>
-      $('<td/>').addClass('button').append('<a class="tinyactionlink row_edit_button rec' + record.id + '" href="#"><?php echo $GLOBALS['locEdit']?><\/a>').appendTo(tr);
-      $('<td/>').addClass('button').append('<a class="tinyactionlink row_copy_button rec' + record.id + '" href="#"><?php echo $GLOBALS['locCopy']?><\/a>').appendTo(tr);
+      $('<td/>').addClass('button').append('<a class="btn btn-xs btn-default tinyactionlink row_edit_button rec' + record.id + '" href="#"><?php echo $GLOBALS['locEdit']?><\/a>').appendTo(tr);
+      $('<td/>').addClass('button').append('<a class="btn btn-xs btn-default tinyactionlink row_copy_button rec' + record.id + '" href="#"><?php echo $GLOBALS['locCopy']?><\/a>').appendTo(tr);
 <?php
   }
 ?>
@@ -1013,7 +1018,7 @@ function popup_editor(event, title, id, copy_row)
     if (!copy_row)
       buttons["<?php echo $GLOBALS['locDelete']?>"] = function() { if(confirm('<?php echo $GLOBALS['locConfirmDelete']?>')==true) { delete_row('iform_popup'); } return false; };
     buttons["<?php echo $GLOBALS['locClose']?>"] = function() { $("#popup_edit").dialog('close'); };
-    $("#popup_edit").dialog({ modal: true, width: 840, height: 150, resizable: false,
+    $("#popup_edit").dialog({ modal: true, width: 840, height: 250, resizable: false,
       buttons: buttons,
       title: title,
     });
@@ -1026,7 +1031,7 @@ function popup_editor(event, title, id, copy_row)
 /* ]]> */
 </script>
         <form method="post" name="iform" id="iform">
-        <table class="iform" id="itable">
+        <table class="table table-condensed table-bordered" id="itable">
           <thead>
             <tr>
 <?php
@@ -1035,7 +1040,7 @@ function popup_editor(event, title, id, copy_row)
     if (!in_array($subElem['type'], array('HID_INT', 'SECHID_INT', 'BUTTON', 'NEWLINE')))
     {
 ?>
-              <th class="label ui-state-default <?php echo strtolower($subElem['style'])?>_label"><?php echo $subElem['label']?></th>
+              <th class="ui-state-default <?php echo strtolower($subElem['style'])?>_label"><?php echo $subElem['label']?></th>
 <?php
     }
   }
@@ -1047,7 +1052,7 @@ function popup_editor(event, title, id, copy_row)
   if (sesWriteAccess())
   {
 ?>
-            <tr id="form_row">
+            <tr id="form_row" class="form-group">
 <?php
     foreach ($subFormElements as $subElem)
     {
@@ -1055,7 +1060,7 @@ function popup_editor(event, title, id, copy_row)
       {
         $value = getFormDefaultValue($subElem, $intKeyValue);
 ?>
-              <td class="label <?php echo strtolower($subElem['style'])?>_label">
+              <td class=" <?php echo strtolower($subElem['style'])?>_label">
                 <?php echo htmlFormElement('iform_' . $subElem['name'], $subElem['type'], $value, $subElem['style'], $subElem['listquery'], 'MODIFY', 0, '', array(), $subElem['elem_attributes'])?>
               </td>
 <?php
@@ -1063,7 +1068,7 @@ function popup_editor(event, title, id, copy_row)
       elseif ($subElem['type'] == 'ROWSUM')
       {
 ?>
-              <td class="label <?php echo strtolower($subElem['style'])?>_label">
+              <td class=" <?php echo strtolower($subElem['style'])?>_label">
                 &nbsp;
               </td>
 <?php
@@ -1071,17 +1076,17 @@ function popup_editor(event, title, id, copy_row)
     }
     if ($strForm == 'invoice') {
 ?>
-              <td class="button">
-                <a class="tinyactionlink add_row_button" href="#" onclick="save_row('iform'); return false;"><?php echo $GLOBALS['locAddRow']?></a>
+              <td class="btn btn-xs btn-default">
+                <a class="btn btn-xs btn-default tinyactionlink add_row_button" href="#" onclick="save_row('iform'); return false;"><?php echo $GLOBALS['locAddRow']?></a>
               </td>
-              <td class="button">
-                <a class="tinyactionlink update_row_dates" href="#" onclick="update_row_dates(); return false;"><?php echo $GLOBALS['locUpdateRowDates']?></a>
+              <td class="btn btn-xs btn-default">
+                <a class="btn btn-xs btn-default tinyactionlink update_row_dates" href="#" onclick="update_row_dates(); return false;"><?php echo $GLOBALS['locUpdateRowDates']?></a>
               </td>
 <?php
     } else {
 ?>
-              <td class="button" colspan="2">
-                <a class="tinyactionlink add_row_button" href="#" onclick="save_row('iform'); return false;"><?php echo $GLOBALS['locAddRow']?></a>
+              <td class="btn btn-xs btn-default" colspan="2">
+                <a class="btn btn-xs btn-default tinyactionlink add_row_button" href="#" onclick="save_row('iform'); return false;"><?php echo $GLOBALS['locAddRow']?></a>
               </td>
 <?php
     }
@@ -1091,11 +1096,11 @@ function popup_editor(event, title, id, copy_row)
         </table>
         </form>
       </div>
-      <div id="popup_edit" style="display: none; width: 900px; overflow: hidden">
+      <div id="popup_edit" style="display: none; width: 900px; ">
         <form method="post" name="iform_popup" id="iform_popup">
         <input type="hidden" name="row_id" value="">
         <input type="hidden" name="<?php echo $strParentKey?>" value="<?php echo $intKeyValue?>">
-        <table class="iform">
+        <table class="iform table table-condensed">
           <tr>
 <?php
     foreach ($subFormElements as $elem)
@@ -1103,7 +1108,7 @@ function popup_editor(event, title, id, copy_row)
       if (!in_array($elem['type'], array('HID_INT', 'SECHID_INT', 'BUTTON', 'NEWLINE', 'ROWSUM')))
       {
 ?>
-            <td class="label <?php echo strtolower($elem['style'])?>_label">
+            <td class=" <?php echo strtolower($elem['style'])?>_label">
               <?php echo $elem['label']?><br>
               <?php echo htmlFormElement('iform_popup_' . $elem['name'], $elem['type'], '', $elem['style'], $elem['listquery'], 'MODIFY', 0, '', array(), $elem['elem_attributes'])?>
             </td>
@@ -1130,9 +1135,9 @@ function popup_editor(event, title, id, copy_row)
         </table>
         </form>
       </div>
-      <div id="popup_date_edit" style="display: none; width: 300px; overflow: hidden">
+      <div id="popup_date_edit" style="display: none; width: 400px; height: 200px; overflow: hidden">
         <form method="post" name="form_date_popup" id="form_date_popup">
-          <input id="popup_date_edit_field" type="text" class="medium hasCalendar">
+          <input id="popup_date_edit_field" type="text" class="medium hasCalendar form-control">
         </form>
       </div>
 <?php
@@ -1147,19 +1152,19 @@ function createFormButtons($boolNew, $copyLinkOverride, $spinner, $readOnlyForm)
 <?php
   if (!$readOnlyForm) {
 ?>
-      <a class="actionlink save_button" href="#" onclick="save_record(); return false;"><?php echo $GLOBALS['locSave']?></a>
+      <a class="btn btn-sm btn-default actionlink save_button" href="#" onclick="save_record(); return false;"><?php echo $GLOBALS['locSave']?></a>
 <?php
   }
 
   if (!$boolNew)
   {
     $copyCmd = $copyLinkOverride ? "window.location='$copyLinkOverride'; return false;" : "document.getElementById('admin_form').copyact.value=1; document.getElementById('admin_form').submit(); return false;";
-?>      <a class="actionlink" href="#" onclick="<?php echo $copyCmd?>"><?php echo $GLOBALS['locCopy']?></a>
-      <a class="actionlink" href="#" onclick="document.getElementById('admin_form').newact.value=1; document.getElementById('admin_form').submit(); return false;"><?php echo $GLOBALS['locNew']?></a>
+?>      <a class="btn btn-sm btn-default actionlink" href="#" onclick="<?php echo $copyCmd?>"><?php echo $GLOBALS['locCopy']?></a>
+      <a class="btn btn-sm btn-default actionlink" href="#" onclick="document.getElementById('admin_form').newact.value=1; document.getElementById('admin_form').submit(); return false;"><?php echo $GLOBALS['locNew']?></a>
 <?php
     if (!$readOnlyForm) {
 ?>
-      <a class="actionlink" href="#" onclick="if(confirm('<?php echo $GLOBALS['locConfirmDelete']?>')==true) {  document.getElementById('admin_form').deleteact.value=1; document.getElementById('admin_form').submit(); return false;} else{ return false; }"><?php echo $GLOBALS['locDelete']?></a>
+      <a class="btn btn-sm btn-default actionlink" href="#" onclick="if(confirm('<?php echo $GLOBALS['locConfirmDelete']?>')==true) {  document.getElementById('admin_form').deleteact.value=1; document.getElementById('admin_form').submit(); return false;} else{ return false; }"><?php echo $GLOBALS['locDelete']?></a>
 <?php
     }
   }

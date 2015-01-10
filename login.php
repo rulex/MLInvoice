@@ -98,6 +98,7 @@ echo htmlPageStart(_PAGE_TITLE_, array('jquery/js/jquery.md5.js'));
 <body onload="document.getElementById('flogin').focus();">
 <div class="pagewrapper ui-widget ui-widget-content">
 <div class="form" style="padding: 30px;">
+<div class="container">
 
 <?php
 if (isset($upgradeMessage)) {
@@ -123,10 +124,9 @@ if (isset($languages)) {
   echo '<br/>';
 }
 ?>
-<h1><?php echo $GLOBALS['locWelcome']?></h1>
-<p>
-  <span id="loginmsg"><?php echo $strMessage?></span>
-</p>
+<div style="max-width: 330px; padding: 15px; margin: 0 auto;">
+<h1 class="form-signin-heading"><?php echo $GLOBALS['locWelcome']?></h1>
+<small class="muted" id="loginmsg"><?php echo $strMessage?></small>
 
 <script type="text/javascript">
 function createHash()
@@ -145,15 +145,14 @@ function createHash()
   <input type="hidden" name="backlink" value="<?php echo $backlink?>">
   <input type="hidden" name="fpasswd" id="fpasswd" value="">
   <input type="hidden" name="key" id="key" value="<?php echo $key?>">
-  <p>
-    <span style="width: 100px; display: inline-block;"><?php echo $GLOBALS['locUserID']?></span> <input class="medium" name="flogin" id="flogin" type="text" value="">
-  </p>
-  <p>
-    <span style="width: 100px; display: inline-block;"><?php echo $GLOBALS['locPassword']?></span> <input class="medium" name="passwd" id="passwd" type="password" value="">
-  </p>
-  <input type="submit" name="logon" value="<?php echo $GLOBALS['locLogin']?>">
+	<input class="form-control input-lg" name="flogin" id="flogin" placeholder="<?php echo $GLOBALS['locUserID']?>" type="text" value="">
+	<input class="form-control input-lg" name="passwd" id="passwd" placeholder="<?php echo $GLOBALS['locPassword']?>" type="password" value="">
+  <input class="btn btn-lg btn-primary btn-block" type="submit" name="logon" value="<?php echo $GLOBALS['locLogin']?>">
 </form>
 
+</div>
+
+</div>
 </div>
 </div>
 </body>

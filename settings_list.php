@@ -110,7 +110,7 @@ function createSettingsList()
       if ($elemType == 'LABEL')
       {
 ?>
-        <div class="sublabel ui-widget-header ui-state-default ui-state-active"><?php echo $elem['label']?></div>
+        <div class="panel-heading sublabel ui-widget-header ui-state-default ui-state-active"><?php echo $elem['label']?></div>
 <?php
         continue;
       }
@@ -146,7 +146,7 @@ function createSettingsList()
 <?php
       } else {
 ?>
-      <div class="label" style="clear: both"><label for="<?php echo $name?>"><?php echo $elem['label']?></label></div>
+      <div class="" style="clear: both"><label for="<?php echo $name?>"><?php echo $elem['label']?></label></div>
       <div class="field" style="clear: both">
         <?php echo htmlFormElement($name, $elemType, $value, $elem['style'], '', "MODIFY", '', '', array(), isset($elem['elem_attributes']) ? $elem['elem_attributes'] : '', isset($elem['options']) ? $elem['options'] : null)?>
       </div>
@@ -166,7 +166,7 @@ function createSettingsListButtons()
 {
 ?>
 <div class="form_buttons" style="clear: both">
-      <a class="actionlink save_button" href="#" onclick="document.getElementById('admin_form').saveact.value=1; document.getElementById('admin_form').submit(); return false;"><?php echo $GLOBALS['locSave']?></a>
+      <a class="btn btn-default actionlink save_button" href="#" onclick="document.getElementById('admin_form').saveact.value=1; document.getElementById('admin_form').submit(); return false;"><?php echo $GLOBALS['locSave']?></a>
     </div>
 <?php
 }

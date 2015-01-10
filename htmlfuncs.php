@@ -100,10 +100,10 @@ $(document).ready(function() {
   $('a[class~="formbuttonlink"]').button();
   $('#maintabs ul li').hover(
     function () {
-      $(this).addClass("ui-state-hover");
+      //$(this).addClass("ui-state-hover");
     },
     function () {
-      $(this).removeClass("ui-state-hover");
+      //$(this).removeClass("ui-state-hover");
     }
   );
 });
@@ -146,7 +146,7 @@ Todo :
   if ($astrAdditionalAttributes)
     $astrAdditionalAttributes = " $astrAdditionalAttributes";
   $strListBox =
-      "<select class=\"$strStyle\" id=\"$strName\" name=\"$strName\"{$strOnChange}{$astrAdditionalAttributes}>\n";
+      "<select class=\"$strStyle form-control input-sm\" id=\"$strName\" name=\"$strName\"{$strOnChange}{$astrAdditionalAttributes}>\n";
   if ($blnShowEmpty)
   {
     $strListBox .= '<option value=""' . ($strSelected ? '' : ' selected') . "> - </option>\n";
@@ -223,13 +223,13 @@ function htmlFormElement($strName, $strType, $strValue, $strStyle, $strListQuery
       }
 
       $strFormElement =
-        "<input type=\"text\" class=\"$strStyle\"$autocomplete " .
+        "<input type=\"text\" style=\"padding: 1px;\" class=\"gray-dark form-control input-sm\"$autocomplete " .
         "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars($strValue) . "\"$astrAdditionalAttributes$readOnly>\n";
       break;
 
     case 'PASSWD':
       $strFormElement =
-        "<input type=\"password\" class=\"$strStyle\" " .
+        "<input type=\"password\" class=\"form-control input-sm\" " .
         "id=\"$strName\" name=\"$strName\" value=\"\"$astrAdditionalAttributes$readOnly>\n";
       break;
 
@@ -255,13 +255,13 @@ function htmlFormElement($strName, $strType, $strValue, $strStyle, $strListQuery
       if ($hideZero && $strValue == 0)
         $strValue = '';
       $strFormElement =
-        "<input type=\"text\" class=\"$strStyle\" " .
+        "<input type=\"text\" style=\"padding: 1px;\" class=\"form-control input-sm\" " .
         "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars($strValue) . "\"$astrAdditionalAttributes$readOnly>\n";
       break;
 
     case 'INTDATE':
       $strFormElement =
-        "<input type=\"text\" class=\"$strStyle hasCalendar\" ".
+        "<input type=\"text\" style=\"padding: 1px;\" class=\"form-control input-sm hasCalendar\" ".
         "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars($strValue) . "\"$astrAdditionalAttributes$readOnly>\n";
       break;
 
@@ -273,7 +273,7 @@ function htmlFormElement($strName, $strType, $strValue, $strStyle, $strListQuery
 
     case 'AREA':
       $strFormElement =
-        "<textarea rows=\"24\" cols=\"80\" class=\"" . $strStyle . "\" ".
+        "<textarea rows=\"5\" cols=\"120\" class=\"form-control input-sm " . $strStyle . "\" ".
         "id=\"" . $strName . "\" name=\"" . $strName . "\"$astrAdditionalAttributes$readOnly>" . $strValue . "</textarea>\n";
       break;
 
@@ -296,7 +296,7 @@ function htmlFormElement($strName, $strType, $strValue, $strStyle, $strListQuery
       else
       {
         $strFormElement =
-          "<input type=\"text\" class=\"$strStyle\" " .
+          "<input type=\"text\" style=\"padding: 1px;\" class=\"form-control input-sm\" " .
           "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars(getSQLListBoxSelectedValue($strListQuery, $strValue, $translate)) . "\"$astrAdditionalAttributes$readOnly>\n";
       }
       break;
@@ -345,7 +345,7 @@ EOT;
       else
       {
         $strFormElement =
-          "<input type=\"text\" class=\"$strStyle\" " .
+          "<input type=\"text\" style=\"padding: 1px;\" class=\"form-control input-sm\" " .
           "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars(getSQLListBoxSelectedValue($strListQuery, $strValue, $translate)) . "\"$astrAdditionalAttributes$readOnly>\n";
       }
       break;
@@ -362,7 +362,7 @@ EOT;
       else
       {
         $strFormElement =
-          "<input type=\"text\" class=\"$strStyle\" " .
+          "<input type=\"text\" style=\"padding: 1px;\" class=\"$strStyle\" " .
           "id=\"$strName\" name=\"$strName\" value=\"" . htmlspecialchars(getListBoxSelectedValue($options, $strValue, $translate)) . "\"$astrAdditionalAttributes$readOnly>\n";
       }
       break;
@@ -419,7 +419,7 @@ EOT;
           break;
       }
       $strFormElement =
-          "<a class=\"formbuttonlink\" href=\"$strHref\" $strOnClick$astrAdditionalAttributes>" . htmlspecialchars($strTitle) . "</a>\n";
+          "<a class=\"\" href=\"$strHref\" $strOnClick$astrAdditionalAttributes>" . htmlspecialchars($strTitle) . "</a>\n";
       break;
 
     case 'JSBUTTON':
@@ -433,7 +433,7 @@ EOT;
           $strListQuery = str_replace('_ID_', $strValue, $strListQuery);
         $strOnClick = "onClick=\"$strListQuery\"";
         $strFormElement =
-          "<a class=\"formbuttonlink\" href=\"#\" $strOnClick$astrAdditionalAttributes>" . htmlspecialchars($strTitle) . "</a>\n";
+          "<a class=\"\" href=\"#\" $strOnClick$astrAdditionalAttributes>" . htmlspecialchars($strTitle) . "</a>\n";
       }
       break;
 

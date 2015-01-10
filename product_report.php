@@ -106,7 +106,7 @@ class ProductReport
     }
 ?>
     <div class="medium_label">
-      <a class="actionlink" href="#" onclick="document.getElementById('params').submit(); return false;"><?php echo $GLOBALS['locCreateReport']?></a>
+      <a class="btn btn-default" href="#" onclick="document.getElementById('params').submit(); return false;"><?php echo $GLOBALS['locCreateReport']?></a>
     </div>
     </form>
   </div>

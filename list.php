@@ -111,9 +111,9 @@ function createList($strFunc, $strList, $strTableName = '', $strTitleOverride = 
   });
   </script>
 
-  <div class="list_container">
+  <div class="col-sm-12">
     <div id="<?php echo $strTableName?>_title" class="table_header"><?php echo $strTitle?></div>
-    <table id="<?php echo $strTableName?>" class="list">
+    <table id="<?php echo $strTableName?>" class="table table-condensed table-bordered" style="margin: 0px;">
       <thead>
         <tr>
           <th>Link</th>

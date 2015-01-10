@@ -64,7 +64,7 @@ function createFuncMenu($strFunc)
       break;
     }
     if ($strNewText)
-      $strNewButton = "<br/><br/><a class=\"buttonlink new_button\" href=\"?func=system&amp;list=$strList&amp;form=$strList\">$strNewText</a>";
+      $strNewButton = "<br/><br/><a class=\"btn btn-xs btn-default new_button\" href=\"?func=system&amp;list=$strList&amp;form=$strList\">$strNewText</a>";
     break;
 
   case "settings":
@@ -81,7 +81,7 @@ function createFuncMenu($strFunc)
     case 'product': $strNewText = $GLOBALS['locNewProduct']; break;
     }
     if ($strNewText)
-      $strNewButton = "<br/><br/><a class=\"buttonlink\" href=\"?func=settings&amp;list=$strList&amp;form=$strList\">$strNewText</a>";
+      $strNewButton = "<br/><br/><a class=\"btn btn-xs btn-default\" href=\"?func=settings&amp;list=$strList&amp;form=$strList\">$strNewText</a>";
     break;
 
   case "reports":
@@ -97,7 +97,7 @@ function createFuncMenu($strFunc)
     $strFormName = "company";
     $strFormSwitch = "company";
     $astrNaviLinks = array();
-    $strNewButton = '<a class="buttonlink" href="?func=companies&amp;form=company">' . $GLOBALS['locNewClient'] . '</a>';
+    $strNewButton = '<a class="btn btn-xs btn-default" href="?func=companies&amp;form=company">' . $GLOBALS['locNewClient'] . '</a>';
     break;
 
   default:
@@ -109,7 +109,7 @@ function createFuncMenu($strFunc)
     else
       $astrNaviLinks[] = array("href" => "index.php?func=open_invoices", "text" => $GLOBALS['locDisplayOpenInvoices'], "levels_allowed" => array(ROLE_USER, ROLE_BACKUPMGR));
     if ($strFunc != 'archived_invoices') {
-      $strNewButton = '<a class="buttonlink" href="?func=invoices&amp;form=invoice">' . $GLOBALS['locNewInvoice'] . '</a>';
+      $strNewButton = '<a class="btn btn-xs btn-default" href="?func=invoices&amp;form=invoice">' . $GLOBALS['locNewInvoice'] . '</a>';
       $astrNaviLinks[] = array("href" => "index.php?func=import_statement", "text" => $GLOBALS['locImportAccountStatement'], "levels_allowed" => array(ROLE_USER, ROLE_BACKUPMGR));
     }
     $strFunc = 'invoices';
@@ -155,15 +155,15 @@ function createFuncMenu($strFunc)
         $strHref = $link['href'];
       $class = (strstr($_SERVER['QUERY_STRING'], $link['href'])) ? ' ui-state-highlight' : '';
 ?>
-    <a class="buttonlink<?php echo $class?>" href="<?php echo $strHref?>"><?php echo $link['text']?></a>
+    <a class="btn btn-xs btn-default <?php echo $class?>" href="<?php echo $strHref?>"><?php echo $link['text']?></a>
 <?php
     }
   }
   if ($blnShowSearch)
   {
 ?>
-    <a class="buttonlink" href="#" onClick="openSearchWindow('ext', event); return false;"><?php echo $GLOBALS['locExtSearch']?></a>
-    <a class="buttonlink" href="#" onClick="openSearchWindow('quick', event); return false;"><?php echo $GLOBALS['locQuickSearch']?></a>
+    <a class="btn btn-xs btn-default" href="#" onClick="openSearchWindow('ext', event); return false;"><?php echo $GLOBALS['locExtSearch']?></a>
+    <a class="btn btn-xs btn-default" href="#" onClick="openSearchWindow('quick', event); return false;"><?php echo $GLOBALS['locQuickSearch']?></a>
 <?php
   }
   if (sesWriteAccess())
