@@ -76,6 +76,7 @@ $xUACompatible  <title>$strTitle</title>
   <link rel="stylesheet" type="text/css" href="$theme">
   <link rel="stylesheet" type="text/css" href="jquery/css/ui.daterangepicker.css">
   <link rel="stylesheet" type="text/css" href="css/style.css">
+  <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
 	<link href="select2/select2.css" rel="stylesheet" />
   <script type="text/javascript" src="jquery/js/jquery-1.10.2.min.js"></script>
   <script type="text/javascript" src="jquery/js/jquery.json-2.3.min.js"></script>
@@ -88,6 +89,7 @@ $xUACompatible  <title>$strTitle</title>
   <script type="text/javascript" src="jquery/js/jquery.daterangepicker.js"></script>
   <script type="text/javascript" src="js/functions.js"></script>
   <script type="text/javascript" src="select2/select2.min.js"></script>$select2locale
+  <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   <script type="text/javascript">
 $(document).ready(function() {
 	$("select#company_id,select#iform_product_id").select2({ width:"element" });
