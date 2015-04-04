@@ -1,4 +1,19 @@
 <?php
+/*******************************************************************************
+MLInvoice: web-based invoicing application.
+Copyright (C) 2010-2015 Ere Maijala
+
+This program is free software. See attached LICENSE.
+
+*******************************************************************************/
+
+/*******************************************************************************
+MLInvoice: web-pohjainen laskutusohjelma.
+Copyright (C) 2010-2015 Ere Maijala
+
+Tämä ohjelma on vapaa. Lue oheinen LICENSE.
+
+*******************************************************************************/
 
 require_once 'invoice_printer_base.php';
 require_once 'htmlfuncs.php';
@@ -18,12 +33,20 @@ class InvoicePrinterEmail extends InvoicePrinterBase
     $senderData = $this->senderData;
     $recipientData = $this->recipientData;
 
+    if ($this->printStyle == 'receipt') {
+	    $defaultSubject = isset($senderData['receipt_email_subject']) ? $senderData['receipt_email_subject'] : '';
+	    $defaultBody = isset($senderData['receipt_email_body']) ? $senderData['receipt_email_body'] : '';
+    } else {
+	    $defaultSubject = isset($senderData['invoice_email_subject']) ? $senderData['invoice_email_subject'] : '';
+	    $defaultBody = isset($senderData['invoice_email_body']) ? $senderData['invoice_email_body'] : '';
+    }
+
     $this->emailFrom = getRequest('email_from', isset($senderData['invoice_email_from']) ? $senderData['invoice_email_from'] : (isset($senderData['email']) ? $senderData['email'] : ''));
     $this->emailTo = getRequest('email_to', isset($recipientData['email']) ? $recipientData['email'] : '');
     $this->emailCC = getRequest('email_cc', '');
     $this->emailBCC = getRequest('email_bcc', isset($senderData['invoice_email_bcc']) ? $senderData['invoice_email_bcc'] : '');
-    $this->emailSubject = $this->replacePlaceholders(getRequest('email_subject', isset($senderData['invoice_email_subject']) ? $senderData['invoice_email_subject'] : ''));
-    $this->emailBody = $this->replacePlaceholders(getRequest('email_body', isset($senderData['invoice_email_body']) ? $senderData['invoice_email_body'] : ''));
+    $this->emailSubject = $this->replacePlaceholders(getRequest('email_subject', $defaultSubject));
+    $this->emailBody = $this->replacePlaceholders(getRequest('email_body', $defaultBody));
 
     $send = getRequest('email_send', '');
     if (!$send || !$this->emailFrom || !$this->emailTo || !$this->emailSubject || !$this->emailBody)

@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -29,19 +29,23 @@ $dblink = null;
 
 function init_db_connection()
 {
-	global $dblink;
+  global $dblink;
 
-	// Connect to database server
-	$dblink = mysqli_connect(_DB_SERVER_, _DB_USERNAME_, _DB_PASSWORD_)
-	   or die("Could not connect : " . mysqli_error());
+  // Connect to database server
+  $dblink = mysqli_connect(_DB_SERVER_, _DB_USERNAME_, _DB_PASSWORD_);
 
-	// Select database
-	mysqli_select_db($dblink, _DB_NAME_) or die("Could not select database: " . mysqli_error($dblink));
+  if (mysqli_connect_errno()) {
+    die('Could not connect to database: ' . mysqli_connect_error());
+  }
 
-	if (_CHARSET_ == 'UTF-8')
-	  mysqli_query_check('SET NAMES \'utf8\'');
+  // Select database
+  mysqli_select_db($dblink, _DB_NAME_) or die("Could not select database: " . mysqli_error($dblink));
 
-	mysqli_query_check('SET AUTOCOMMIT=1');
+  if (_CHARSET_ == 'UTF-8') {
+    mysqli_query_check('SET NAMES \'utf8\'');
+  }
+
+  mysqli_query_check('SET AUTOCOMMIT=1');
 }
 
 function extractSearchTerm(&$searchTerms, &$field, &$operator, &$term, &$boolean)
@@ -114,6 +118,9 @@ function createWhereClause($astrSearchFields, $strSearchTerms, &$arrQueryParams,
   $strWhereClause = "(";
   $termPrefix = $leftAnchored ? '' : '%';
   for( $i = 0; $i < count($astrTerms); $i++ ) {
+      if ($i > 0) {
+          $termPrefix = '%';
+      }
       if ($astrTerms[$i]) {
           $strWhereClause .= '(';
           for( $j = 0; $j < count($astrSearchFields); $j++ ) {
@@ -141,6 +148,96 @@ function createWhereClause($astrSearchFields, $strSearchTerms, &$arrQueryParams,
   return $strWhereClause;
 }
 
+function updateProductStockBalance($invoiceRowId, $productId, $count)
+{
+  // Get old product stock balance
+	$oldProductId = false;
+	$oldCount = 0;
+	if (!empty($invoiceRowId)) {
+		// Fetch old product id
+    $res = mysqli_param_query(
+    	'SELECT product_id, pcs from {prefix}invoice_row WHERE id=? AND deleted=0',
+    	array($invoiceRowId),
+    	'exception'
+    );
+    list($oldProductId, $oldCount) = mysqli_fetch_array($res);
+	}
+
+	if ($oldProductId) {
+		// Add old balance to old product
+		mysqli_param_query(
+		  'UPDATE {prefix}product SET stock_balance=IFNULL(stock_balance, 0)+? WHERE id=?',
+		  array($oldCount, $oldProductId),
+		  'exception'
+		);
+	}
+	if (!empty($productId)) {
+		// Deduct from new product
+		mysqli_param_query(
+		  'UPDATE {prefix}product SET stock_balance=IFNULL(stock_balance, 0)-? WHERE id=?',
+		  array($count, $productId),
+		  'exception'
+		);
+	}
+}
+
+function getTermsOfPayment($companyId)
+{
+  if (!empty($companyId)) {
+    $res = mysqli_param_query('SELECT terms_of_payment FROM {prefix}company WHERE id = ?',
+      array($companyId)
+    );
+    $companyPaymentTerms = mysqli_fetch_value($res);
+    if (!empty($companyPaymentTerms)) {
+      return $companyPaymentTerms;
+    }
+  }
+  return getSetting('invoice_terms_of_payment');
+}
+
+function getPaymentDays($companyId)
+{
+  if (!empty($companyId)) {
+    $res = mysqli_param_query('SELECT payment_days FROM {prefix}company WHERE id = ?',
+      array($companyId)
+    );
+    $companyPaymentDays = mysqli_fetch_value($res);
+    if (!empty($companyPaymentDays)) {
+      return $companyPaymentDays;
+    }
+  }
+  return getSetting('invoice_payment_days');
+}
+
+function deleteRecord($table, $id)
+{
+  mysqli_query_check('BEGIN');
+  try {
+  	// Special case for invoice_row - update product stock balance
+  	if ($table == '{prefix}invoice_row') {
+  		updateProductStockBalance($id, null, null);
+  	}
+
+  	// Special case for invoice - update all products in invoice rows
+  	if ($table == '{prefix}invoice') {
+      $res = mysqli_param_query(
+        'SELECT id FROM {prefix}invoice_row WHERE invoice_id=? AND deleted=0',
+        array($id),
+      	'exception'
+      );
+      while ($row = mysqli_fetch_assoc($res)) {
+        updateProductStockBalance($row['id'], null, null);
+      }
+  	}
+    $query = "UPDATE $table SET deleted=1 WHERE id=?";
+    mysqli_param_query($query, array($id), 'exception');
+  } catch (Exception $e) {
+    mysqli_query_check('ROLLBACK');
+    throw $e;
+  }
+  mysqli_query_check('COMMIT');
+}
+
 function mysqli_query_check($query, $noFail=false)
 {
 	global $dblink;
@@ -157,12 +254,16 @@ function mysqli_query_check($query, $noFail=false)
     if (strlen($query) > 1024)
       $query = substr($query, 0, 1024) . '[' . (strlen($query) - 1024) . ' more characters]';
     error_log("Query '$query' failed: ($intError) " . mysqli_error($dblink));
-    if (!$noFail)
+    if ($noFail !== true)
     {
       header('HTTP/1.1 500 Internal Server Error');
-      if (!defined('_DB_VERBOSE_ERRORS_') || !_DB_VERBOSE_ERRORS_)
-        die($GLOBALS['locDBError']);
-      die(htmlspecialchars("Query '$query' failed: ($intError) " . mysqli_error($dblink)));
+      $msg = (!defined('_DB_VERBOSE_ERRORS_') || !_DB_VERBOSE_ERRORS_)
+        ? $GLOBALS['locDBError']
+        : htmlspecialchars("Query '$query' failed: ($intError) " . mysqli_error($dblink));
+      if ($noFail == 'exception') {
+      	throw new Exception($msg);
+      }
+      die($msg);
     }
   }
   return $intRes;
@@ -178,7 +279,7 @@ function mysqli_param_query($query, $params=false, $noFail=false)
 	}
 
   if (!$params) {
-  	return mysqli_query_check($query);
+  	return mysqli_query_check($query, $noFail);
   }
   foreach ($params as &$v)
   {
@@ -193,9 +294,7 @@ function mysqli_param_query($query, $params=false, $noFail=false)
           $t .= ',';
         $v2 = mysqli_real_escape_string($dblink, $v2);
         if (!is_numeric($v2) || (strlen(trim($v2)) > 0 && substr(trim($v2), 0, 1) == '0')) {
-          if (substr(trim($v2), 0, 1 != '(')) {
-            $v2 = "'$v2'";
-          }
+          $v2 = "'$v2'";
         }
         $t .= $v2;
       }
@@ -205,9 +304,7 @@ function mysqli_param_query($query, $params=false, $noFail=false)
     {
       $v = mysqli_real_escape_string($dblink, $v);
       if (!is_numeric($v) || (strlen(trim($v)) > 1 && substr(trim($v), 0, 1) == '0')) {
-        if (substr(trim($v), 0, 1) != '(') {
-          $v = "'$v'";
-        }
+        $v = "'$v'";
       }
     }
   }
@@ -245,8 +342,9 @@ function create_db_dump()
 {
   $in_tables = array('invoice_state', 'row_type', 'company_type', 'base',
     'delivery_terms', 'delivery_method', 'company', 'company_contact',
-    'product', 'session_type', 'users', 'invoice', 'invoice_row',
-    'quicksearch', 'settings', 'session', 'print_template', 'state');
+    'product', 'session_type', 'users', 'stock_balance_log', 'invoice',
+  	'invoice_row', 'quicksearch', 'settings', 'session', 'print_template',
+    'state');
 
   $filename = 'mlinvoice_backup_' . date('Ymd') . '.sql';
   header('Content-type: text/x-sql');
@@ -351,6 +449,28 @@ EOT
       return 'FAILED';
     }
     mysqli_query_check("REPLACE INTO {prefix}state (id, data) VALUES ('version', '15')");
+  }
+
+  // Convert any MyISAM tables to InnoDB
+  $res = mysqli_param_query('SELECT data FROM {prefix}state WHERE id=?', array('tableconversiondone'));
+  if (mysqli_num_rows($res) == 0) {
+    mysqli_query_check('SET AUTOCOMMIT = 0');
+    mysqli_query_check('BEGIN');
+    mysqli_query_check('SET FOREIGN_KEY_CHECKS = 0');
+    $res = mysqli_query_check("SHOW TABLE STATUS WHERE ENGINE='MyISAM'");
+    while ($row = mysqli_fetch_array($res)) {
+      $res2 = mysqli_query_check('ALTER TABLE `' . $row['Name'] . '` ENGINE=INNODB', true);
+      if ($res2 === false) {
+        mysqli_query_check('ROLLBACK');
+        mysqli_query_check('SET FOREIGN_KEY_CHECKS = 1');
+        error_log('Database upgrade query failed. Please convert the tables using MyISAM engine to InnoDB engine manually');
+        return 'FAILED';
+      }
+    }
+    mysqli_query_check("INSERT INTO {prefix}state (id, data) VALUES ('tableconversiondone', '1')");
+    mysqli_query_check('COMMIT');
+    mysqli_query_check('SET AUTOCOMMIT = 1');
+    mysqli_query_check('SET FOREIGN_KEY_CHECKS = 1');
   }
 
   $res = mysqli_param_query('SELECT data FROM {prefix}state WHERE id=?', array('version'));
@@ -541,25 +661,109 @@ EOT
     ));
   }
 
+  if ($version < 31) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}product ADD COLUMN ean_code1 varchar(13) default NULL',
+      'ALTER TABLE {prefix}product ADD COLUMN ean_code2 varchar(13) default NULL',
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '31')"
+    ));
+  }
+
+  if ($version < 32) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}product ADD COLUMN purchase_price decimal(15,5) NULL',
+      'ALTER TABLE {prefix}product ADD COLUMN stock_balance int(11) default NULL',
+      <<<EOT
+CREATE TABLE {prefix}stock_balance_log (
+  id int(11) NOT NULL auto_increment,
+  time timestamp NOT NULL default CURRENT_TIMESTAMP,
+  user_id int(11) NOT NULL,
+  product_id int(11) NOT NULL,
+  stock_change int(11) NOT NULL,
+  description varchar(255) NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (user_id) REFERENCES {prefix}users(id),
+  FOREIGN KEY (product_id) REFERENCES {prefix}product(id)
+) ENGINE=INNODB CHARACTER SET utf8 COLLATE utf8_swedish_ci
+EOT
+      ,
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '32')"
+    ));
+  }
+
+  if ($version < 33) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}base ADD COLUMN receipt_email_subject varchar(255) NULL',
+      'ALTER TABLE {prefix}base ADD COLUMN receipt_email_body text NULL',
+    	"REPLACE INTO {prefix}state (id, data) VALUES ('version', '33')"
+  	));
+  }
+
+  if ($version < 34) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}product CHANGE COLUMN stock_balance stock_balance decimal(11,2) default NULL',
+      'ALTER TABLE {prefix}stock_balance_log CHANGE COLUMN stock_change stock_change decimal(11,2) default NULL',
+    	"REPLACE INTO {prefix}state (id, data) VALUES ('version', '34')"
+  	));
+  }
+
+  if ($version < 35) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}invoice_state ADD COLUMN invoice_open tinyint NOT NULL default 0',
+      'ALTER TABLE {prefix}invoice_state ADD COLUMN invoice_unpaid tinyint NOT NULL default 0',
+      'UPDATE {prefix}invoice_state SET invoice_open=1 WHERE id IN (1)',
+      'UPDATE {prefix}invoice_state SET invoice_unpaid=1 WHERE id IN (2, 5, 6, 7)',
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '35')"
+  	));
+  }
+
+  if ($version < 36) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}product CHANGE COLUMN ean_code1 barcode1 varchar(255) default NULL',
+      'ALTER TABLE {prefix}product CHANGE COLUMN ean_code2 barcode2 varchar(255) default NULL',
+      'ALTER TABLE {prefix}product ADD COLUMN barcode1_type varchar(20) default NULL',
+      'ALTER TABLE {prefix}product ADD COLUMN barcode2_type varchar(20) default NULL',
+      "UPDATE {prefix}product SET barcode1_type='EAN13' WHERE barcode1 IS NOT NULL",
+      "UPDATE {prefix}product SET barcode2_type='EAN13' WHERE barcode2 IS NOT NULL",
+      'ALTER TABLE {prefix}base ADD COLUMN order_confirmation_email_subject varchar(255) NULL',
+      'ALTER TABLE {prefix}base ADD COLUMN order_confirmation_email_body text NULL',
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '36')"
+    ));
+  }
+
+  if ($version < 37) {
+    $updates = array_merge($updates, array(
+      'ALTER TABLE {prefix}company ADD COLUMN payment_days int(11) default NULL',
+      'ALTER TABLE {prefix}company ADD COLUMN terms_of_payment varchar(255) NULL',
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '37')"
+    ));
+  }
+
+  if ($version < 38) {
+    $updates = array_merge($updates, array(
+      'UPDATE {prefix}invoice_row ir SET ir.row_date=(SELECT i.invoice_date FROM {prefix}invoice i where i.id=ir.invoice_id) WHERE ir.row_date IS NULL',
+      "REPLACE INTO {prefix}state (id, data) VALUES ('version', '38')"
+    ));
+  }
+
   if (!empty($updates)) {
+    mysqli_query_check('SET AUTOCOMMIT = 0');
+    mysqli_query_check('BEGIN');
     foreach ($updates as $update) {
       $res = mysqli_query_check($update, true);
       if ($res === false) {
-        error_log('Database upgrade query failed. Please execute the following queries manually: ');
-        $ok = true;
-        foreach ($updates as $update2) {
-          if ($update === $update2) {
-            $ok = false;
-          }
-          if ($ok) {
-            continue;
-          }
-          $update2 = str_replace('{prefix}', _DB_PREFIX_ . '_', $update2);
-          error_log($update2);
-        }
+        mysqli_query_check('ROLLBACK');
+        mysqli_query_check('SET AUTOCOMMIT = 1');
+        error_log("Database upgrade query failed. Please execute the following queries manually:"
+            . PHP_EOL . PHP_EOL
+            . implode(PHP_EOL, array_map(function($s) { return str_replace('{prefix}', _DB_PREFIX_ . '_', $s); }, $updates))
+            . PHP_EOL
+        );
         return 'FAILED';
       }
     }
+    mysqli_query_check('COMMIT');
+    mysqli_query_check('SET AUTOCOMMIT = 1');
     return 'UPGRADED';
   }
   return 'OK';

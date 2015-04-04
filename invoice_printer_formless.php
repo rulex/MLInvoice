@@ -1,4 +1,19 @@
 <?php
+/*******************************************************************************
+MLInvoice: web-based invoicing application.
+Copyright (C) 2010-2015 Ere Maijala
+
+This program is free software. See attached LICENSE.
+
+*******************************************************************************/
+
+/*******************************************************************************
+MLInvoice: web-pohjainen laskutusohjelma.
+Copyright (C) 2010-2015 Ere Maijala
+
+Tämä ohjelma on vapaa. Lue oheinen LICENSE.
+
+*******************************************************************************/
 
 require_once 'invoice_printer_base.php';
 require_once 'htmlfuncs.php';
@@ -15,7 +30,7 @@ class InvoicePrinterFormless extends InvoicePrinterBase
       $this->senderData['bank_iban'] . $this->senderData['bank_swiftbic'];
     }
     $this->senderAddressLine .= "\n$bank";
-    
+
     parent::printInvoice();
   }
 
@@ -31,14 +46,14 @@ class InvoicePrinterFormless extends InvoicePrinterBase
     $senderData = $this->senderData;
     $invoiceData = $this->invoiceData;
     $recipientData = $this->recipientData;
-    
+
     if ($this->printStyle == 'dispatch')
       $locStr = 'DispatchNote';
     elseif ($this->printStyle == 'receipt')
       $locStr = 'Receipt';
     else
       $locStr = 'Invoice';
-    
+
     // Invoice info headers
     $pdf->SetXY(115,10);
     $pdf->SetFont('Helvetica','B',12);
@@ -81,9 +96,11 @@ class InvoicePrinterFormless extends InvoicePrinterBase
       $pdf->SetX(115);
       $pdf->Cell(40, 5, $GLOBALS['locPDFTermsOfPayment'] .": ", 0, 0, 'R');
       $paymentDays = round(dbDate2UnixTime($invoiceData['due_date']) / 3600 / 24 - dbDate2UnixTime($invoiceData['invoice_date']) / 3600 / 24);
-      if ($paymentDays < 0) //weird
-        $paymentDays = getSetting('invoice_payment_days');
-      $pdf->Cell(60, 5, sprintf(getSetting('invoice_terms_of_payment'), $paymentDays), 0, 1);
+      if ($paymentDays < 0) {
+        // This shouldn't happen, but try to be safe...
+        $paymentDays = getPaymentDate($invoiceData['company_id']);
+      }
+      $pdf->Cell(60, 5, sprintf(getTermsOfPayment($invoiceData['company_id']), $paymentDays), 0, 1);
       $pdf->SetX(115);
       $pdf->Cell(40, 5, $GLOBALS['locPDFPeriodForComplaints'] .": ", 0, 0, 'R');
       $pdf->Cell(60, 5, getSetting('invoice_period_for_complaints'), 0, 1);
@@ -103,7 +120,7 @@ class InvoicePrinterFormless extends InvoicePrinterBase
         $pdf->Cell(60, 5, $this->refNumber, 0, 1);
       }
     }
-    
+
     if ($invoiceData['reference'] && $this->printStyle != 'dispatch')
     {
       $pdf->SetX(115);
@@ -116,7 +133,7 @@ class InvoicePrinterFormless extends InvoicePrinterBase
       $pdf->Cell(40, 5, $GLOBALS['locPDFAdditionalInformation'] . ': ', 0, 0, 'R');
       $pdf->MultiCell(50, 5, $invoiceData['info'], 0, 'L', 0);
     }
-    
+
     if ($this->printStyle == 'invoice')
     {
       if ($invoiceData['refunded_invoice_no'])
@@ -124,7 +141,7 @@ class InvoicePrinterFormless extends InvoicePrinterBase
         $pdf->SetX(115);
         $pdf->Cell(40, 5, sprintf($GLOBALS['locPDFRefundsInvoice'], $invoiceData['refunded_invoice_no']), 0, 1, 'R');
       }
-      
+
       if ($invoiceData['state_id'] == 5)
       {
         $pdf->SetX(108);

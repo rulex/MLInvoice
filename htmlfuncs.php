@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -75,8 +75,8 @@ $xUACompatible  <title>$strTitle</title>
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" type="text/css" href="$theme">
   <link rel="stylesheet" type="text/css" href="jquery/css/ui.daterangepicker.css">
+  <link href="select2/select2.css" rel="stylesheet" />
   <link rel="stylesheet" type="text/css" href="css/style.css">
-	<link href="select2/select2.css" rel="stylesheet" />
   <script type="text/javascript" src="jquery/js/jquery-1.10.2.min.js"></script>
   <script type="text/javascript" src="jquery/js/jquery.json-2.3.min.js"></script>
   <script type="text/javascript" src="jquery/js/jquery.cookie.js"></script>
@@ -90,7 +90,6 @@ $xUACompatible  <title>$strTitle</title>
   <script type="text/javascript" src="select2/select2.min.js"></script>$select2locale
   <script type="text/javascript">
 $(document).ready(function() {
-	$("select#company_id,select#iform_product_id").select2({ width:"element" });
   $.datepicker.setDefaults($datePickerOptions);
   $('a[class~="actionlink"]').button();
   $('a[class~="tinyactionlink"]').button();
@@ -312,30 +311,44 @@ EOT;
           $strStyle = str_replace(' noemptyvalue', '', $strStyle);
           $showEmpty = '';
         }
+        $strValue = htmlspecialchars($strValue);
+        $onchange = $astrAdditionalAttributes ? ".on(\"change\", $astrAdditionalAttributes)" : '';
         $strFormElement = <<<EOT
-<input type="hidden" class="$strStyle" id="$strName" name="$strName"$astrAdditionalAttributes/>
+<input type="hidden" class="$strStyle" id="$strName" name="$strName" value="$strValue"/>
 <script type="text/javascript">
-$("#$strName").select2({
-  placeholder: "",
-  ajax: {
-    url: "json.php?func=get_selectlist&$strListQuery",
-    dataType: 'json',
-    quietMillis: 200,
-    data: function (term, page) { // page is the one-based page number tracked by Select2
-      return {
-        q: term, //search term
-        pagelen: 50, // page size
-        page: page, // page number
-      };
+$(document).ready(function() {
+  $("#$strName").select2({
+    placeholder: "",
+    ajax: {
+      url: "json.php?func=get_selectlist&$strListQuery",
+      dataType: 'json',
+      quietMillis: 200,
+      data: function (term, page) { // page is the one-based page number tracked by Select2
+        return {
+          q: term, //search term
+          pagelen: 50, // page size
+          page: page, // page number
+        };
+      },
+      results: function (data, page) {
+        var records = data.records;
+  $showEmpty
+        return {results: records, more: data.moreAvailable};
+      }
     },
-    results: function (data, page) {
-      var records = data.records;
-$showEmpty
-      return {results: records, more: data.moreAvailable};
-    }
-  },
-  dropdownCssClass: "bigdrop",
-  escapeMarkup: function (m) { return m; }
+    initSelection: function(element, callback) {
+      var id = $(element).val();
+      if (id !== "") {
+        $.ajax("json.php?func=get_selectlist&$strListQuery&id=" + id, {
+          dataType: "json"
+        }).done(function(data) { callback(data.records[0]); });
+      }
+    },
+    dropdownCssClass: "bigdrop",
+    dropdownAutoWidth: true,
+    escapeMarkup: function (m) { return m; },
+    width: "element"
+  })$onchange
 });
 </script>
 EOT;

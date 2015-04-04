@@ -1,4 +1,19 @@
 <?php
+/*******************************************************************************
+MLInvoice: web-based invoicing application.
+Copyright (C) 2010-2015 Ere Maijala
+
+This program is free software. See attached LICENSE.
+
+*******************************************************************************/
+
+/*******************************************************************************
+MLInvoice: web-pohjainen laskutusohjelma.
+Copyright (C) 2010-2015 Ere Maijala
+
+Tämä ohjelma on vapaa. Lue oheinen LICENSE.
+
+*******************************************************************************/
 
 require_once 'invoice_printer_base.php';
 require_once 'htmlfuncs.php';
@@ -67,14 +82,16 @@ class InvoicePrinterOrderConfirmation extends InvoicePrinterBase
     $pdf->SetX(115);
     $pdf->Cell(40, 5, $GLOBALS['locPDFTermsOfPayment'] . ': ', 0, 0, 'R');
     $paymentDays = round(dbDate2UnixTime($invoiceData['due_date']) / 3600 / 24 - dbDate2UnixTime($invoiceData['invoice_date']) / 3600 / 24);
-    if ($paymentDays < 0) //weird
-      $paymentDays = getSetting('invoice_payment_days');
-    $pdf->Cell(60, 5, sprintf(getSetting('invoice_terms_of_payment'), $paymentDays), 0, 1);
+    if ($paymentDays < 0) {
+      // This shouldn't happen, but try to be safe...
+      $paymentDays = getPaymentDate($invoiceData['company_id']);
+    }
+    $pdf->Cell(60, 5, sprintf(getTermsOfPayment($invoiceData['company_id']), $paymentDays), 0, 1);
 
     if ($invoiceData['reference']) {
       $pdf->SetX(115);
       $pdf->Cell(40, 5, $GLOBALS['locPDFYourReference'] . ': ', 0, 0, 'R');
-      $pdf->Cell(60, 5, $invoiceData['reference'], 0, 1);
+      $pdf->MultiCell(50, 5, $invoiceData['reference'], 0, 'L');
     }
 
     if ($invoiceData['delivery_terms']) {

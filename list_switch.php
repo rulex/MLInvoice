@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -46,8 +46,8 @@ case 'companies':
    $strDeletedField = 'deleted';
    $astrShowFields =
     array(
-        array("name" => "company_name", 'width' => 150, "type" => "TEXT", "header" => $GLOBALS['locClientName']),
-        array("name" => "company_id", 'width' => 100, "type" => "TEXT", "header" => $GLOBALS['locClientVATID']),
+        array("name" => "company_name", 'width' => 150, "type" => "TEXT", "header" => $GLOBALS['locClientName'], 'select' => true),
+        array("name" => "company_id", 'width' => 100, "type" => "TEXT", "header" => $GLOBALS['locClientVATID'], 'select' => true),
         array("name" => "inactive", 'width' => 100, "type" => "TEXT", "header" => $GLOBALS['locHeaderClientActive'],
           'mappings' => array('0' => $GLOBALS['locActive'], '1' => $GLOBALS['locInactive']) ),
         array("name" => "customer_no", 'width' => 100, "type" => "TEXT", "header" => $GLOBALS['locCustomerNr']),
@@ -166,7 +166,8 @@ case 'product':
         array("name" => "product_code", 'width' => 150, "type" => "TEXT", "header" => $GLOBALS['locProductCode'], 'select' => true),
         array("name" => "product_name", 'width' => 200, "type" => "TEXT", "header" => $GLOBALS['locProductName'], 'select' => true),
         array("name" => "product_group", 'width' => 150, "type" => "TEXT", "header" => $GLOBALS['locProductGroup']),
-        array("name" => "unit_price", 'width' => 100, "type" => "CURRENCY", "header" => $GLOBALS['locUnitPrice'], 'decimals' => getSetting('unit_price_decimals'))
+        array("name" => "unit_price", 'width' => 100, "type" => "CURRENCY", "header" => $GLOBALS['locUnitPrice'], 'decimals' => getSetting('unit_price_decimals')),
+        array("name" => "stock_balance", 'width' => 100, "type" => "CURRENCY", "header" => $GLOBALS['locStockBalance'], 'decimals' => 2)
     );
 
    $strMainForm = "product";

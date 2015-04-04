@@ -1,4 +1,19 @@
 <?php
+/*******************************************************************************
+MLInvoice: web-based invoicing application.
+Copyright (C) 2010-2015 Ere Maijala
+
+This program is free software. See attached LICENSE.
+
+*******************************************************************************/
+
+/*******************************************************************************
+MLInvoice: web-pohjainen laskutusohjelma.
+Copyright (C) 2010-2015 Ere Maijala
+
+Tämä ohjelma on vapaa. Lue oheinen LICENSE.
+
+*******************************************************************************/
 
 require_once 'invoice_printer_base.php';
 require_once 'htmlfuncs.php';
@@ -40,7 +55,7 @@ class InvoicePrinterXslt extends InvoicePrinterBase
         switch ($key)
         {
         case 'invoice_terms_of_payment':
-          $settingsData[$key] = sprintf(getSetting('invoice_terms_of_payment'), getSetting('invoice_payment_days'));
+          $settingsData[$key] = sprintf(getTermsOfPayment($invoiceData['company_id']), getPaymentDays($invoiceData['company_id']));
           break;
         case 'invoice_pdf_filename':
           $settingsData[$key] = $this->getPrintOutFileName(getSetting('invoice_pdf_filename'));

@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -40,6 +40,14 @@ function createList($strFunc, $strList, $strTableName = '', $strTitleOverride = 
 
   if (!$strTable) {
     return;
+  }
+
+  if ($strListFilter) {
+    if ($strWhereClause) {
+      $strWhereClause .= " AND $strListFilter";
+    } else {
+      $strWhereClause = $strListFilter;
+    }
   }
 
   if (!$strTableName) {
@@ -140,6 +148,8 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
 {
   require "list_switch.php";
 
+  global $dblink;
+
   if (!sesAccessLevel($levelsAllowed) && !sesAdminAccess())
   {
 ?>
@@ -161,9 +171,12 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
     $boolean = '';
     while (extractSearchTerm($where, $field, $operator, $term, $nextBool))
     {
-      //echo ("bool: $boolean, field: $field, op: $operator, term: $term \n");
-      $strWhereClause .= "$boolean$field $operator ?";
-      $arrQueryParams[] = str_replace("%-", "%", $term);
+      if (strcasecmp($operator, 'IN') === 0) {
+        $strWhereClause .= "$boolean$field $operator " . mysqli_real_escape_string($dblink, $term);
+      } else {
+        $strWhereClause .= "$boolean$field $operator ?";
+        $arrQueryParams[] = str_replace("%-", "%", $term);
+      }
       if (!$nextBool)
         break;
       $boolean = " $nextBool";
@@ -323,8 +336,9 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
   return json_encode($results);
 }
 
-function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
+function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort, $id = null)
 {
+  global $dblink;
   require "list_switch.php";
 
   if (!sesAccessLevel($levelsAllowed) && !sesAdminAccess())
@@ -368,7 +382,7 @@ function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
 
   $strWhereClause = '';
 
-  if (!getSetting('show_deleted_records'))
+  if (!getSetting('show_deleted_records') && empty($id))
   {
     $strWhereClause = " WHERE $strDeletedField=0";
   }
@@ -379,7 +393,12 @@ function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
 
   // Add Filter
   if ($filter) {
-    $strWhereClause .= ($strWhereClause ? ' AND ' : ' WHERE ') . createWhereClause($astrSearchFields, $filter, $arrQueryParams, true);
+    $strWhereClause .= ($strWhereClause ? ' AND ' : ' WHERE ')
+      . createWhereClause($astrSearchFields, $filter, $arrQueryParams, !getSetting('dynamic_select_search_in_middle'));
+  }
+
+  if ($id) {
+    $strWhereClause .= ($strWhereClause ? ' AND ' : ' WHERE ') . 'id=' . mysqli_real_escape_string($dblink, $id);
   }
 
   // Build the final select clause

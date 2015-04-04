@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -104,8 +104,7 @@ function createForm($strFunc, $strList, $strForm)
 
   if ($blnDelete && $intKeyValue && !$readOnlyForm)
   {
-    $strQuery = "UPDATE $strTable SET deleted=1 WHERE id=?";
-    mysqli_param_query($strQuery, array($intKeyValue));
+  	deleteRecord($strTable, $intKeyValue);
     unset($intKeyValue);
     unset($astrValues);
     $blnNew = TRUE;
@@ -166,11 +165,14 @@ function createForm($strFunc, $strList, $strForm)
   $prevPosition = false;
   $prevColSpan = 1;
   $rowOpen = false;
-  $fieldMode = sesWriteAccess() && !$readOnlyForm ? 'MODIFY' : 'READONLY';
+  $formFieldMode = sesWriteAccess() && !$readOnlyForm ? 'MODIFY' : 'READONLY';
   foreach ($astrFormElements as $elem)
   {
     if ($elem['type'] === false)
       continue;
+
+    $fieldMode = isset($elem['read_only']) && $elem['read_only'] ? 'READONLY' : $formFieldMode;
+
     if ($elem['type'] == "LABEL")
     {
       if ($rowOpen)
@@ -178,7 +180,7 @@ function createForm($strFunc, $strList, $strForm)
       $rowOpen = false;
   ?>
         <tr>
-          <td class="sublabel ui-widget-header ui-state-default ui-state-active" colspan="4">
+          <td class="sublabel ui-widget-header ui-state-default" colspan="4">
             <?php echo $elem['label']?>
           </td>
         </tr>
@@ -290,7 +292,7 @@ function createForm($strFunc, $strList, $strForm)
 <?php
       }
 ?>
-          <td class="field"<?php echo $strColspan?>>
+          <td class="field"<?php echo $strColspan ? " $strColspan" : ''?>>
             <?php echo htmlFormElement($elem['name'], $elem['type'], $value, $elem['style'], $elem['listquery'], $fieldMode, isset($elem['parent_key']) ? $elem['parent_key'] : '', '', array(), isset($elem['elem_attributes']) ? $elem['elem_attributes'] : '', isset($elem['options']) ? $elem['options'] : null);
       if (isset($elem['attached_elem'])) echo '            ' . $elem['attached_elem'] . "\n";
 ?>
@@ -302,14 +304,32 @@ function createForm($strFunc, $strList, $strForm)
       $prevPosition = 255;
     $prevColSpan = $intColspan;
   }
+
   if (!$haveChildForm)
   {
     if ($rowOpen)
       echo "        </tr>\n";
     echo "      </table>\n      </form>\n";
   }
+  if ($strForm == 'product') {
+    // Special case for product: show stock balance change log
 ?>
+      <div class="iform ui-corner-tl ui-corner-bl ui-corner-br ui-corner-tr ui-helper-clearfix" id="stock_balance_log">
+        <div class="ui-corner-tl ui-corner-tr fg-toolbar ui-toolbar ui-widget-header"><?php echo $GLOBALS['locStockBalanceUpdates']?></div>
+        <table id="stock_balance_change_log">
+          <tr>
+            <th class="medium"><?php echo $GLOBALS['locHeaderChangeLogDateTime']?></th>
+            <th class="medium"><?php echo $GLOBALS['locHeaderChangeLogUser']?></th>
+            <th class="small"><?php echo $GLOBALS['locHeaderChangeLogAmount']?></th>
+            <th class="long"><?php echo $GLOBALS['locHeaderChangeLogDescription']?></th>
+          </tr>
+        </table>
+      </div>
     </div>
+<?php
+  }
+?>
+  </div>
 
 
 <script type="text/javascript">
@@ -374,6 +394,11 @@ $(document).ready(function() {
   errormsg("<?php echo $strErrorMessage?>");
 <?php
   }
+  if ($strForm == 'product') {
+?>
+  update_stock_balance_log();
+<?php
+  }
   if (sesWriteAccess())
   {
 ?>
@@ -392,13 +417,13 @@ $(document).ready(function() {
     $('#spinner').css('visibility', 'hidden');
   });
 
-  $('#admin_form').find('input[type="text"],input[type="checkbox"],select,textarea').change(function() { $('.save_button').addClass('ui-state-highlight'); });
+  $('#admin_form').find('input[type="text"],input[type="hidden"],input[type="checkbox"],select,textarea').change(function() { $('.save_button').addClass('ui-state-highlight'); });
 <?php
   if ($haveChildForm && !$blnNew)
   {
 ?>
   init_rows();
-  $('#iform').find('input[type="text"],input[type="checkbox"],select,textarea').change(function() { $('.add_row_button').addClass('ui-state-highlight'); });
+  $('#iform').find('input[type="text"],input[type="hidden"],input[type="checkbox"],select,textarea').change(function() { $('.add_row_button').addClass('ui-state-highlight'); });
 <?php
   }
   elseif (isset($newLocation))
@@ -518,7 +543,7 @@ function popup_dialog(url, on_close, dialog_title, event, width, height)
   $(document).ready(function() {
   var s = document.createElement("script");
     s.type = "text/javascript";
-    s.src  = "http://maps.googleapis.com/maps/api/js?sensor=false&libraries=places&callback=gmapsready";
+    s.src  = "https://maps.googleapis.com/maps/api/js?sensor=false&libraries=places&callback=gmapsready";
     window.gmapsready = function(){
         initAddressAutocomplete("");
         initAddressAutocomplete("quick_");

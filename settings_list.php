@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 This program is free software. See attached LICENSE.
 
@@ -9,7 +9,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Tämä ohjelma on vapaa. Lue oheinen LICENSE.
 
@@ -110,7 +110,7 @@ function createSettingsList()
       if ($elemType == 'LABEL')
       {
 ?>
-        <div class="sublabel ui-widget-header ui-state-default ui-state-active"><?php echo $elem['label']?></div>
+        <div class="sublabel ui-widget-header ui-state-default"><?php echo $elem['label']?></div>
 <?php
         continue;
       }

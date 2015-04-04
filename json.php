@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 This program is free software. See attached LICENSE.
 
@@ -9,7 +9,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Tämä ohjelma on vapaa. Lue oheinen LICENSE.
 
@@ -84,7 +84,7 @@ case 'get_company_contacts':
   break;
 
 case 'delete_company_contact':
-  deleteRecord('company_contact');
+  deleteJSONRecord('company_contact');
   break;
 
 case 'put_company_contact':
@@ -112,7 +112,7 @@ case 'put_invoice_row':
   break;
 
 case 'delete_invoice_row':
-  deleteRecord('invoice_row');
+  deleteJSONRecord('invoice_row');
   break;
 
 case 'add_reminder_fees':
@@ -132,21 +132,44 @@ case 'add_reminder_fees':
 
 case 'get_invoice_defaults':
   $baseId = getRequest('base_id', 0);
+  $companyId = getRequest('company_id', 0);
   $invoiceId = getRequest('id', 0);
+  $invoiceDate = getRequest('invoice_date', dateConvDBDate2Date(date('Y') . '0101'));
   $intervalType = getRequest('interval_type', 0);
   $invNr = getRequest('invoice_no', 0);
-  if (!$invNr) {
+  $perYear = getSetting('invoice_numbering_per_year');
+
+  // If the invoice already has an invoice number, verify that it's not in use in another invoice
+  if ($invNr) {
+    $query = 'SELECT ID FROM {prefix}invoice where deleted=0 AND id!=? AND invoice_no=?';
+    $params = array($invoiceId, $invNr);
     if (getSetting('invoice_numbering_per_base') && $baseId)
-      $res = mysqli_param_query('SELECT max(cast(invoice_no as unsigned integer)) FROM {prefix}invoice WHERE deleted=0 AND id!=? AND base_id=?', array($invoiceId, $baseId));
-    else
-      $res = mysqli_param_query('SELECT max(cast(invoice_no as unsigned integer)) FROM {prefix}invoice WHERE deleted=0 AND id!=?', array($invoiceId));
-    $invNr = mysqli_fetch_value($res) + 1;
+    {
+      $query .= ' AND base_id=?';
+      $params[] = $baseId;
+    }
+    if ($perYear) {
+    	$query .= ' AND invoice_date >= ' . dateConvDate2DBDate($invoiceDate);
+    }
+
+    $res = mysqli_param_query($query, $params);
+    if (mysqli_fetch_assoc($res)) {
+      $invNr = 0;
+    }
+  }
+
+  if (!$invNr) {
+  	$maxNr = get_max_invoice_number($invoiceId, getSetting('invoice_numbering_per_base') && $baseId ? $baseId : null, $perYear);
+  	if ($maxNr === null && $perYear) {
+  		$maxNr = get_max_invoice_number($invoiceId, getSetting('invoice_numbering_per_base') && $baseId ? $baseId : null, false);
+  	}
+  	$invNr = $maxNr + 1;
   }
   if ($invNr < 100)
     $invNr = 100; // min ref number length is 3 + check digit, make sure invoice number matches that
   $refNr = $invNr . miscCalcCheckNo($invNr);
   $strDate = date($GLOBALS['locDateFormat']);
-  $strDueDate = date($GLOBALS['locDateFormat'], mktime(0, 0, 0, date("m"), date("d")+getSetting('invoice_payment_days'), date("Y")));
+  $strDueDate = date($GLOBALS['locDateFormat'], mktime(0, 0, 0, date("m"), date("d") + getPaymentDays($companyId), date("Y")));
   switch ($intervalType) {
     case 2:
       $nextIntervalDate = date($GLOBALS['locDateFormat'], mktime(0, 0, 0, date("m") + 1, date("d"), date("Y")));
@@ -298,9 +321,10 @@ case 'get_selectlist':
   $page = intval(getRequest('page', 1)) - 1;
   $filter = getRequest('q', '');
   $sort = getRequest('sort', '');
+  $id = getRequest('id', '');
 
   header('Content-Type: application/json');
-  echo createJSONSelectList($table, $page * $pageLen, $pageLen, $filter, $sort);
+  echo createJSONSelectList($table, $page * $pageLen, $pageLen, $filter, $sort, $id);
   break;
 
 case 'update_invoice_row_dates':
@@ -317,6 +341,40 @@ case 'update_invoice_row_dates':
   }
   header('Content-Type: application/json');
   echo updateInvoiceRowDates($invoiceId, $date);
+  break;
+
+case 'update_stock_balance':
+  if (!sesWriteAccess())
+  {
+    header('HTTP/1.1 403 Forbidden');
+    exit;
+  }
+  $productId = getRequest('product_id', 0);
+  $change = getRequest('stock_balance_change', 0);
+  $desc = getRequest('stock_balance_change_desc', '');
+  header('Content-Type: application/json');
+  echo updateStockBalance($productId, $change, $desc);
+  break;
+
+case 'get_stock_balance_rows':
+  $productId = getRequest('product_id', 0);
+  if (!$productId) {
+    exit;
+  }
+  $res = mysqli_param_query('SELECT l.time, u.name, l.stock_change, l.description FROM {prefix}stock_balance_log l INNER JOIN {prefix}users u ON l.user_id=u.id WHERE product_id=? ORDER BY time DESC',
+    array($productId)
+  );
+  $html = '';
+  while ($row = mysqli_fetch_assoc($res)) {
+?>
+          <tr>
+            <td><?php echo dateConvDBTimestamp2DateTime($row['time'])?></td>
+            <td><?php echo $row['name']?></td>
+            <td><?php echo miscRound2Decim($row['stock_change'])?></td>
+            <td><?php echo $row['description']?></td>
+          </tr>
+<?php
+  }
   break;
 
 case 'noop':
@@ -352,6 +410,9 @@ function printJSONRecord($table, $id = FALSE, $warnings = null)
       unset($row['password']);
     header('Content-Type: application/json');
     $row['warnings'] = $warnings;
+    if ($table == '{prefix}base') {
+      unset($row['logo_filedata']);
+    }
     echo json_encode($row);
   }
 }
@@ -405,9 +466,11 @@ function printJSONRecords($table, $parentIdCol, $sort)
   $from = "FROM {prefix}$table t";
 
   if ($table == 'invoice_row') {
-    // Include product name and code
+    // Include product name, product code and row type name
     $select .= ", CASE WHEN LENGTH(p.product_code) = 0 THEN IFNULL(p.product_name, '') ELSE CONCAT_WS(' ', p.product_code, IFNULL(p.product_name, '')) END as product_id_text";
     $from .= ' LEFT OUTER JOIN {prefix}product p on (p.id = t.product_id)';
+    $select .= ", rt.name as type_id_text";
+    $from .= ' LEFT OUTER JOIN {prefix}row_type rt on (rt.id = t.type_id)';
   }
 
   $where = '';
@@ -446,6 +509,11 @@ function printJSONRecords($table, $parentIdCol, $sort)
       echo ",\n";
     if ($table == 'users')
       unset($row['password']);
+    if ($table == 'invoice_row') {
+      if (!empty($row['type_id_text']) && isset($GLOBALS['loc' . $row['type_id_text']])) {
+        $row['type_id_text'] = $GLOBALS['loc' . $row['type_id_text']];
+      }
+    }
     echo json_encode($row);
   }
   echo "\n]}";
@@ -468,8 +536,8 @@ function saveJSONRecord($table, $parentKeyName)
   $strForm = $table;
   $strFunc = '';
   $strList = '';
-  require 'form_switch.php';
   $id = isset($data['id']) ? $data['id'] : false;
+  require 'form_switch.php';
   $new = $id ? false : true;
   unset($data['id']);
   $warnings = '';
@@ -493,7 +561,7 @@ function saveJSONRecord($table, $parentKeyName)
   printJSONRecord($strTable, $id, $warnings);
 }
 
-function deleteRecord($table)
+function DeleteJSONRecord($table)
 {
   if (!sesWriteAccess())
   {
@@ -504,8 +572,7 @@ function deleteRecord($table)
   $id = getRequest('id', '');
   if ($id)
   {
-    $query = "UPDATE {prefix}$table SET deleted=1 WHERE id=?";
-    mysqli_param_query($query, array($id));
+    deleteRecord("{prefix}$table", $id);
     header('Content-Type: application/json');
     echo json_encode(array('status' => 'ok'));
   }
@@ -513,6 +580,7 @@ function deleteRecord($table)
 
 function getInvoiceListTotal($where)
 {
+  global $dblink;
   $strFunc = 'invoices';
   $strList = 'invoice';
 
@@ -526,9 +594,12 @@ function getInvoiceListTotal($where)
     $boolean = '';
     while (extractSearchTerm($where, $field, $operator, $term, $nextBool))
     {
-      //echo ("bool: $boolean, field: $field, op: $operator, term: $term \n");
-      $strWhereClause .= "$boolean$field $operator ?";
-      $arrQueryParams[] = str_replace("%-", "%", $term);
+      if (strcasecmp($operator, 'IN') === 0) {
+        $strWhereClause .= "$boolean$field $operator " . mysqli_real_escape_string($dblink, $term);
+      } else {
+        $strWhereClause .= "$boolean$field $operator ?";
+        $arrQueryParams[] = str_replace("%-", "%", $term);
+      }
       if (!$nextBool)
         break;
       $boolean = " $nextBool";
@@ -567,4 +638,48 @@ function updateInvoiceRowDates($invoiceId, $date)
   }
   mysqli_param_query('UPDATE {prefix}invoice_row SET row_date=? WHERE invoice_id=? AND deleted=0', array($date, $invoiceId));
   return json_encode(array('status' => 'ok'));
+}
+
+function updateStockBalance($productId, $change, $desc)
+{
+	$missing = array();
+  if (!$change) {
+    $missing[] = $GLOBALS['locStockBalanceChange'];
+  }
+  if (!$desc) {
+  	$missing[] = $GLOBALS['locStockBalanceChangeDescription'];
+  }
+
+  if ($missing) {
+    return json_encode(array('missing_fields' => $missing));
+  }
+
+  $res = mysqli_param_query('SELECT stock_balance FROM {prefix}product WHERE id=?', array($productId));
+  $row = mysqli_fetch_row($res);
+  if ($row === null) {
+  	return json_encode(array('status' => 'error', 'errors' => $GLOBALS['locErrInvalidValue']));
+  }
+  $balance = $row[0];
+  $balance += $change;
+  mysqli_param_query('UPDATE {prefix}product SET stock_balance=? where id=?', array($balance, $productId));
+  mysqli_param_query('INSERT INTO {prefix}stock_balance_log (user_id, product_id, stock_change, description) VALUES (?, ?, ?, ?)',
+  	array($_SESSION['sesUSERID'], $productId, $change, $desc)
+  );
+  return json_encode(array('status' => 'ok', 'new_stock_balance' => $balance));
+}
+
+function get_max_invoice_number($invoiceId, $baseId, $perYear)
+{
+  if ($baseId !== null) {
+  	$sql = 'SELECT max(cast(invoice_no as unsigned integer)) FROM {prefix}invoice WHERE deleted=0 AND id!=? AND base_id=?';
+  	$params = array($invoiceId, $baseId);
+  } else {
+  	$sql = 'SELECT max(cast(invoice_no as unsigned integer)) FROM {prefix}invoice WHERE deleted=0 AND id!=?';
+  	$params = array($invoiceId);
+  }
+  if ($perYear) {
+  	$sql .= ' AND invoice_date >= ' . date('Y') . '0101';
+  }
+  $res = mysqli_param_query($sql, $params);
+  return mysqli_fetch_value($res);
 }

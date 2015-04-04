@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 This program is free software. See attached LICENSE.
 
@@ -9,7 +9,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Tämä ohjelma on vapaa. Lue oheinen LICENSE.
 
@@ -100,8 +100,11 @@ function saveFormData($table, &$primaryKey, &$formElements, &$values, &$warnings
   {
     $type = $elem['type'];
 
-    if (in_array($type, array('', 'IFORM', 'RESULT', 'BUTTON', 'JSBUTTON', 'IMAGE', 'ROWSUM', 'NEWLINE', 'LABEL')))
+    if (in_array($type, array('', 'IFORM', 'RESULT', 'BUTTON', 'JSBUTTON', 'IMAGE', 'ROWSUM', 'NEWLINE', 'LABEL'))
+    		|| (isset($elem['read_only']) && $elem['read_only'])
+   	) {
       continue;
+    }
 
     $name = $elem['name'];
 
@@ -170,24 +173,61 @@ function saveFormData($table, &$primaryKey, &$formElements, &$values, &$warnings
   if ($missingValues)
     return $missingValues;
 
-  if (!isset($primaryKey) || !$primaryKey)
-  {
-    if ($parentKeyName)
-    {
-      $strFields .= ", $parentKeyName";
-      $strInsert .= ', ?';
-      $arrValues[] = $parentKey;
+  mysqli_query_check('SET AUTOCOMMIT = 0');
+  mysqli_query_check('BEGIN');
+  try {
+    // Special case for invoice rows - update product stock balance
+  	if ($table == '{prefix}invoice_row') {
+    	updateProductStockBalance(
+    	  isset($primaryKey) ? $primaryKey : null,
+    	  isset($values['product_id']) ? $values['product_id'] : null,
+    	  $values['pcs']
+    	);
     }
-    $strQuery = "INSERT INTO $table ($strFields) VALUES ($strInsert)";
-    mysqli_param_query($strQuery, $arrValues);
-    $primaryKey = mysqli_insert_id($dblink);
+
+    if (!isset($primaryKey) || !$primaryKey)
+    {
+      if ($parentKeyName)
+      {
+        $strFields .= ", $parentKeyName";
+        $strInsert .= ', ?';
+        $arrValues[] = $parentKey;
+      }
+      $strQuery = "INSERT INTO $table ($strFields) VALUES ($strInsert)";
+      mysqli_param_query($strQuery, $arrValues, 'exception');
+      $primaryKey = mysqli_insert_id($dblink);
+    }
+    else
+    {
+    	// Special case for invoice - update product stock balance for all
+    	// invoice rows if the invoice was previously deleted
+    	if ($table == '{prefix}invoice') {
+      	$res = mysqli_param_query(
+    			'SELECT deleted FROM {prefix}invoice WHERE id=?',
+      		array($primaryKey)
+      	);
+      	if (mysqli_fetch_value($res)) {
+          $res = mysqli_param_query(
+          	'SELECT product_id, pcs FROM {prefix}invoice_row WHERE invoice_id=? AND deleted=0',
+          	array($primaryKey)
+          );
+          while ($row = mysqli_fetch_assoc($res)) {
+            updateProductStockBalance(null, $row['product_id'], $row['pcs']);
+          }
+      	}
+    	}
+
+      $strQuery = "UPDATE $table SET $strUpdateFields, deleted=0 WHERE id=?";
+      $arrValues[] = $primaryKey;
+      mysqli_param_query($strQuery, $arrValues, 'exception');
+    }
+  } catch (Exception $e) {
+    mysqli_query_check('ROLLBACK');
+    mysqli_query_check('SET AUTOCOMMIT = 1');
+    die($e->getMessage());
   }
-  else
-  {
-    $strQuery = "UPDATE $table SET $strUpdateFields, deleted=0 WHERE id=?";
-    $arrValues[] = $primaryKey;
-    mysqli_param_query($strQuery, $arrValues);
-  }
+  mysqli_query_check('COMMIT');
+  mysqli_query_check('SET AUTOCOMMIT = 1');
 
   // Special case for invoices - check for duplicate invoice numbers
   if ($table == '{prefix}invoice' && isset($values['invoice_no']) && $values['invoice_no'])
@@ -199,6 +239,10 @@ function saveFormData($table, &$primaryKey, &$formElements, &$values, &$warnings
       $query .= ' AND base_id=?';
       $params[] = $values['base_id'];
     }
+    if (getSetting('invoice_numbering_per_year')) {
+    	$query .= ' AND invoice_date >= ' . date('Y') . '0101';
+    }
+
     $res = mysqli_param_query($query, $params);
     if (mysqli_fetch_assoc($res))
       $warnings = $GLOBALS['locInvoiceNumberAlreadyInUse'];

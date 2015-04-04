@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 This program is free software. See attached LICENSE.
 
@@ -9,7 +9,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Tämä ohjelma on vapaa. Lue oheinen LICENSE.
 
@@ -24,6 +24,15 @@ function dateConvDBDate2Date($intDate, $format = '')
   $mon = substr($intDate, 4, 2);
   $year = substr($intDate, 0, 4);
   return date($format ? $format : $GLOBALS['locDateFormat'], mktime(0, 0, 0, $mon, $day, $year));
+}
+
+// Convert database format to user-readable
+function dateConvDBTimestamp2DateTime($dateTime, $format = '')
+{
+  if (!$dateTime) {
+    return '';
+  }
+  return date($format ? $format : $GLOBALS['locDateTimeFormat'], strtotime($dateTime));
 }
 
 // Convert user-readable format to database

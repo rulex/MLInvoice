@@ -1,7 +1,7 @@
 <?php
 /*******************************************************************************
 MLInvoice: web-based invoicing application.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Portions based on:
 PkLasku : web-based invoicing software.
@@ -13,7 +13,7 @@ This program is free software. See attached LICENSE.
 
 /*******************************************************************************
 MLInvoice: web-pohjainen laskutusohjelma.
-Copyright (C) 2010-2012 Ere Maijala
+Copyright (C) 2010-2015 Ere Maijala
 
 Perustuu osittain sovellukseen:
 PkLasku : web-pohjainen laskutusohjelmisto.
@@ -64,7 +64,7 @@ class ProductReport
 
     <div class="unlimited_label"><h1><?php echo $GLOBALS['locProductReport']?></h1></div>
 
-    <div class="medium_label"><?php echo $GLOBALS['locDateInterval']?></div>
+    <div class="medium_label"><?php echo $GLOBALS['locInvoiceDateInterval']?></div>
     <div class="field"><?php echo htmlFormElement('date', 'TEXT', "$dateRange" , 'medium hasDateRangePicker', '', 'MODIFY', FALSE)?></div>
 
     <div class="medium_label"><?php echo $GLOBALS['locBiller']?></div>
@@ -194,44 +194,65 @@ class ProductReport
       $strProductWhere = '';
 
     $strProductQuery = 'SELECT p.id, p.product_code, p.product_name, ir.description, ' .
-      'CASE WHEN ir.vat_included = 0 THEN sum(ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100)) ELSE sum(ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100) / (1 + ir.vat / 100)) END as total_price, ' .
-      'ir.vat, sum(ir.pcs) as pcs, t.name as unit ' .
+      'ir.vat, ir.pcs, t.name as unit, ir.price, ir.vat_included, ir.discount ' .
       'FROM {prefix}invoice_row ir ' .
       'LEFT OUTER JOIN {prefix}product p ON p.id = ir.product_id ' .
       'LEFT OUTER JOIN {prefix}row_type t ON t.id = ir.type_id ' .
       "WHERE ir.deleted=0 AND ir.invoice_id IN ($strQuery) $strProductWhere" .
-      'GROUP BY p.id, ir.description, ir.vat, t.name ' .
-      'ORDER BY p.product_name, ir.description';
+      'ORDER BY p.id, ir.description, t.name, ir.vat';
 
     $this->printHeader($format, $startDate, $endDate);
 
-    $intTotSum = 0;
-    $intTotVAT = 0;
-    $intTotSumVAT = 0;
+    $totalSum = 0;
+    $totalVAT = 0;
+    $totalSumVAT = 0;
+    $prevRow = false;
+    $productCount = 0;
+    $productSum = 0;
+    $productVAT = 0;
+    $productSumVAT = 0;
     $intRes = mysqli_param_query($strProductQuery, $arrParams);
     while ($row = mysqli_fetch_assoc($intRes))
     {
-      $strCode = $row['product_code'];
-      $strProduct = $row['product_name'];
-      $strDescription = $row['description'];
-      $intCount = $row['pcs'];
-      $strUnit = $row['unit'];
-      if ($strUnit) {
-        $strUnit = $GLOBALS["loc$strUnit"];
+      if ($prevRow !== false && ($prevRow['id'] != $row['id']
+          || $prevRow['description'] != $row['description']
+          || $prevRow['unit'] != $row['unit'] || $prevRow['vat'] != $row['vat']
+      )) {
+        $this->printRow(
+          $format, $prevRow['product_code'], $prevRow['product_name'],
+          $prevRow['description'], $productCount, $prevRow['unit'], $productSum,
+          $prevRow['vat'], $productVAT, $productSumVAT
+        );
+        $productCount = 0;
+        $productSum = 0;
+        $productVAT = 0;
+        $productSumVAT = 0;
       }
-      $intSum = $row['total_price'];
-      $intVATPercent = $row['vat'];
+      $prevRow = $row;
 
-      $intVAT = $intSum * $intVATPercent / 100;
-      $intSumVAT = $intSum + $intVAT;
+      $productCount += $row['pcs'];
+      list($rowSum, $rowVAT, $rowSumVAT) = calculateRowSum(
+        $row['price'], $row['pcs'], $row['vat'], $row['vat_included'],
+        $row['discount']
+     	);
 
-      $intTotSum += $intSum;
-      $intTotVAT += $intVAT;
-      $intTotSumVAT += $intSumVAT;
+      $productSum += $rowSum;
+      $productVAT += $rowVAT;
+      $productSumVAT += $rowSumVAT;
 
-      $this->printRow($format, $strCode, $strProduct, $strDescription, $intCount, $strUnit, $intSum, $intVATPercent, $intVAT, $intSumVAT);
+      $totalSum += $rowSum;
+      $totalVAT += $rowVAT;
+      $totalSumVAT += $rowSumVAT;
     }
-    $this->printTotals($format, $intTotSum, $intTotVAT, $intTotSumVAT);
+    if ($prevRow !== false) {
+      $this->printRow(
+        $format, $prevRow['product_code'], $prevRow['product_name'],
+        $prevRow['description'], $productCount, $prevRow['unit'], $productSum,
+        $prevRow['vat'], $productVAT, $productSumVAT
+      );
+    }
+
+    $this->printTotals($format, $totalSum, $totalVAT, $totalSumVAT);
     $this->printFooter($format);
   }
 
@@ -259,7 +280,7 @@ class ProductReport
       }
 
       $pdf->SetFont('Helvetica','B',8);
-      $pdf->Cell(10, 4, $GLOBALS['locCode'], 0, 0, 'L');
+      $pdf->Cell(15, 4, $GLOBALS['locCode'], 0, 0, 'L');
       $pdf->Cell(40, 4, $GLOBALS['locProduct'], 0, 0, 'L');
       $pdf->Cell(25, 4, $GLOBALS['locPCS'], 0, 0, 'R');
       $pdf->Cell(25, 4, $GLOBALS['locUnit'], 0, 0, 'R');
@@ -306,12 +327,16 @@ class ProductReport
   {
     if ($strDescription)
     {
-      if ($format == 'html' && mb_strlen($strDescription) > 20)
-        $strDescription = mb_substr($strDescription, 0, 17) . '...';
+      if ($format == 'html' && mb_strlen($strDescription, 'UTF-8') > 20)
+        $strDescription = mb_substr($strDescription, 0, 17, 'UTF-8') . '...';
       if ($strProduct)
         $strProduct .= " ($strDescription)";
       else
         $strProduct = $strDescription;
+    }
+
+    if ($strUnit && isset($GLOBALS["loc$strUnit"])) {
+      $strUnit = $GLOBALS["loc$strUnit"];
     }
 
     if ($format == 'pdf')
@@ -322,8 +347,8 @@ class ProductReport
       $pdf = $this->pdf;
       $pdf->SetFont('Helvetica','',8);
       $pdf->setY($pdf->getY() + 1);
-      $pdf->Cell(10, 3, $strCode, 0, 0, 'L');
-      $nameX = $pdf->getX();
+      $cells = $pdf->MultiCell(16, 3, $strCode, 0, 'L', false, 0);
+      $nameX = 25;
       $pdf->setX($nameX + 40);
       $pdf->Cell(25, 3, miscRound2Decim($intCount), 0, 0, 'R');
       $pdf->Cell(25, 3, $strUnit, 0, 0, 'R');
@@ -332,7 +357,10 @@ class ProductReport
       $pdf->Cell(25, 3, miscRound2Decim($intVAT), 0, 0, 'R');
       $pdf->Cell(25, 3, miscRound2Decim($intSumVAT), 0, 0, 'R');
       $pdf->setX($nameX);
-      $pdf->MultiCell(40, 3, $strProduct, 0, 'L');
+      $cells2 = $pdf->MultiCell(40, 3, $strProduct, 0, 'L');
+      if ($cells > $cells2) {
+        $pdf->setY($pdf->getY() + ($cells - $cells2) * 3);
+      }
       return;
     }
     if (!$strProduct)
@@ -376,7 +404,7 @@ class ProductReport
       $pdf = $this->pdf;
       $pdf->SetFont('Helvetica','B',8);
       $pdf->setY($pdf->getY() + 3);
-      $pdf->Cell(50, 3, $GLOBALS['locTotal'], 0, 0, 'L');
+      $pdf->Cell(55, 3, $GLOBALS['locTotal'], 0, 0, 'L');
       $pdf->Cell(25, 3, '', 0, 0, 'L');
       $pdf->Cell(25, 3, '', 0, 0, 'L');
       $pdf->Cell(25, 3, miscRound2Decim($intTotSum), 0, 0, 'R');
