@@ -422,32 +422,27 @@ function printInvoiceDates( $table, $parentIdCol, $sort ) {
   $where = '';
   $params = array();
   $id = getRequest('parent_id', '');
-  if( $id && $parentIdCol )
-  {
+  if( $id && $parentIdCol ) {
     $where .= " WHERE $parentIdCol=?";
     $params[] = $id;
   }
-  if( !getSetting('show_deleted_records' ) )
-  {
+  if( !getSetting('show_deleted_records' ) ) {
     if( $where )
       $where .= " AND deleted=0";
     else
       $where = " WHERE deleted=0";
   }
-
   $query .= $where;
 	$query .= " group by row_date ";
   if( $sort )
     $query .= " order by $sort";
 
-  $res = mysql_param_query( $query, $params );
+  $res = mysqli_param_query( $query, $params );
   header( 'Content-Type: application/json' );
   echo "{\"records\":[";
   $first = true;
-  while ($row = mysql_fetch_assoc($res))
-  {
-    if ($first)
-    {
+  while ($row = mysqli_fetch_assoc($res)) {
+    if ($first) {
       echo "\n";
       $first = false;
     }
