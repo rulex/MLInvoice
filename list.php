@@ -194,8 +194,8 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
 
   // Total count
   $fullQuery = "SELECT COUNT(*) AS cnt FROM $strTable $strCountJoin $strWhereClause";
-  $res = mysql_param_query($fullQuery, $arrQueryParams);
-  $row = mysql_fetch_assoc($res);
+  $res = mysqli_param_query($fullQuery, $arrQueryParams);
+  $row = mysqli_fetch_assoc($res);
   $totalCount = $filteredCount = $row['cnt'];
 
   // Add Filter
@@ -204,8 +204,8 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
 
     // Filtered count
     $fullQuery = "SELECT COUNT(*) as cnt FROM $strTable $strCountJoin $strWhereClause";
-    $res = mysql_param_query($fullQuery, $arrQueryParams);
-    $row = mysql_fetch_assoc($res);
+    $res = mysqli_param_query($fullQuery, $arrQueryParams);
+    $row = mysqli_fetch_assoc($res);
     $filteredCount = $row['cnt'];
   }
 
@@ -244,11 +244,11 @@ function createJSONList($strFunc, $strList, $startRow, $rowCount, $sort, $filter
     $fullQuery .= " LIMIT $startRow, $rowCount";
   }
 
-  $res = mysql_param_query($fullQuery, $arrQueryParams);
+  $res = mysqli_param_query($fullQuery, $arrQueryParams);
 
   $astrListValues = array();
   $i = -1;
-  while ($row = mysql_fetch_prefixed_assoc($res)) {
+  while ($row = mysqli_fetch_prefixed_assoc($res)) {
     ++$i;
     $astrPrimaryKeys[$i] = $row[$strPrimaryKey];
     $aboolDeleted[$i] = $row[$strDeletedField];
@@ -397,12 +397,12 @@ function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
     $fullQuery .= " LIMIT $startRow, " . ($rowCount + 1);
   }
 
-  $res = mysql_param_query($fullQuery, $arrQueryParams);
+  $res = mysqli_param_query($fullQuery, $arrQueryParams);
 
   $astrListValues = array();
   $i = -1;
   $moreAvailable = false;
-  while ($row = mysql_fetch_prefixed_assoc($res)) {
+  while ($row = mysqli_fetch_prefixed_assoc($res)) {
     ++$i;
     if ($startRow >= 0 && $rowCount >= 0 && $i >= $rowCount) {
       $moreAvailable = true;
@@ -447,7 +447,7 @@ function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
       if (isset($field['translate']) && $field['translate'] && isset($GLOBALS["loc{$row[$name]}"])) {
         $value = $GLOBALS["loc{$row[$name]}"];
       } else {
-        $value = trim($row[$name]) ? htmlspecialchars($row[$name]) : '&nbsp;';
+        $value = htmlspecialchars($row[$name]);
       }
       $resultValues[$name] = $value;
     }
@@ -460,7 +460,8 @@ function createJSONSelectList($strList, $startRow, $rowCount, $filter, $sort)
 
   $results = array(
     'moreAvailable' => $moreAvailable,
-		'records' => $records
+    'records' => $records,
+    'filter' => $filter
   );
   return json_encode($results);
 }

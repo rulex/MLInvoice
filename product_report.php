@@ -88,9 +88,9 @@ class ProductReport
         "SELECT id, name ".
         "FROM {prefix}invoice_state WHERE deleted=0 ".
         "ORDER BY order_no";
-    $intRes = mysql_query_check($strQuery);
+    $intRes = mysqli_query_check($strQuery);
       $first = true;
-    while ($row = mysql_fetch_assoc($intRes))
+    while ($row = mysqli_fetch_assoc($intRes))
     {
       $intStateId = $row['id'];
       $strStateName = isset($GLOBALS['loc' . $row['name']]) ? $GLOBALS['loc' . $row['name']] : $row['name'];
@@ -165,8 +165,8 @@ class ProductReport
         "SELECT id, name ".
         "FROM {prefix}invoice_state WHERE deleted=0 ".
         "ORDER BY order_no";
-    $intRes = mysql_query_check($strQuery3);
-    while ($row = mysql_fetch_assoc($intRes))
+    $intRes = mysqli_query_check($strQuery3);
+    while ($row = mysqli_fetch_assoc($intRes))
     {
       $intStateId = $row['id'];
       $strStateName = $row['name'];
@@ -193,14 +193,14 @@ class ProductReport
     else
       $strProductWhere = '';
 
-    $strProductQuery = 'SELECT p.product_code, p.product_name, ir.description, ' .
+    $strProductQuery = 'SELECT p.id, p.product_code, p.product_name, ir.description, ' .
       'CASE WHEN ir.vat_included = 0 THEN sum(ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100)) ELSE sum(ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100) / (1 + ir.vat / 100)) END as total_price, ' .
       'ir.vat, sum(ir.pcs) as pcs, t.name as unit ' .
       'FROM {prefix}invoice_row ir ' .
       'LEFT OUTER JOIN {prefix}product p ON p.id = ir.product_id ' .
       'LEFT OUTER JOIN {prefix}row_type t ON t.id = ir.type_id ' .
       "WHERE ir.deleted=0 AND ir.invoice_id IN ($strQuery) $strProductWhere" .
-      'GROUP BY p.product_name, ir.description, ir.vat, t.name ' .
+      'GROUP BY p.id, ir.description, ir.vat, t.name ' .
       'ORDER BY p.product_name, ir.description';
 
     $this->printHeader($format, $startDate, $endDate);
@@ -208,8 +208,8 @@ class ProductReport
     $intTotSum = 0;
     $intTotVAT = 0;
     $intTotSumVAT = 0;
-    $intRes = mysql_param_query($strProductQuery, $arrParams);
-    while ($row = mysql_fetch_assoc($intRes))
+    $intRes = mysqli_param_query($strProductQuery, $arrParams);
+    while ($row = mysqli_fetch_assoc($intRes))
     {
       $strCode = $row['product_code'];
       $strProduct = $row['product_name'];

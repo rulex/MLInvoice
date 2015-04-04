@@ -102,10 +102,10 @@ class ImportStatement extends ImportFile
       return $GLOBALS['locImportStatementFieldMissing'];
     }
 
-    $intRes = mysql_param_query('SELECT i.* FROM {prefix}invoice i'
+    $intRes = mysqli_param_query('SELECT i.* FROM {prefix}invoice i'
       . ' WHERE i.Deleted=0 AND REPLACE(i.ref_number, " ", "") = ?',
       array($refnr));
-    $count = mysql_num_rows($intRes);
+    $count = mysqli_num_rows($intRes);
     if ($count == 0) {
       return str_replace('{refnr}', $refnr, $GLOBALS['locImportStatementInvoiceNotFound']);
     }
@@ -113,19 +113,27 @@ class ImportStatement extends ImportFile
       return str_replace('{refnr}', $refnr, $GLOBALS['locImportStatementMultipleInvoicesFound']);
     }
 
-    $row = mysql_fetch_assoc($intRes);
+    $row = mysqli_fetch_assoc($intRes);
 
     if ($row['state_id'] == 3) {
       return str_replace('{refnr}', $refnr, $GLOBALS['locImportStatementInvoiceAlreadyPaid']);
     }
 
-    $intRes2 = mysql_param_query('SELECT SUM(CASE WHEN ir.vat_included = 0 THEN ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100) * (1 + ir.vat / 100) ELSE ir.price * ir.pcs * (1 - IFNULL(ir.discount, 0) / 100) END) as total_price from {prefix}invoice_row ir where ir.deleted = 0 AND ir.invoice_id = ?',
-       array($row['id']));
-    $rowTotal = mysql_fetch_assoc($intRes2);
+    $res2 = mysqli_param_query(
+    		'SELECT ir.price, ir.pcs, ir.vat, ir.vat_included, ir.discount from {prefix}invoice_row ir where ir.deleted = 0 AND ir.invoice_id = ?',
+    		array($row['id'])
+   	);
+    $rowTotal = 0;
+		while ($invoiceRow = mysqli_fetch_assoc($res2)) {
+      list($rowSum, $rowVAT, $rowSumVAT) = calculateRowSum(
+      		$invoiceRow['price'], $invoiceRow['pcs'], $invoiceRow['vat'], $invoiceRow['vat_included'], $invoiceRow['discount']
+     	);
+      $rowTotal += $rowSumVAT;
+		}
 
-    if (miscRound2Decim($rowTotal['total_price']) != miscRound2Decim($amount)) {
+    if (miscRound2Decim($rowTotal) != miscRound2Decim($amount)) {
       $msg = str_replace('{statementAmount}', miscRound2Decim($amount), $GLOBALS['locImportStatementAmountMismatch']);
-      $msg = str_replace('{invoiceAmount}', miscRound2Decim($rowTotal['total_price']), $msg);
+      $msg = str_replace('{invoiceAmount}', miscRound2Decim($rowTotal), $msg);
       $msg = str_replace('{refnr}', $refnr, $msg);
       return $msg;
     }
@@ -136,7 +144,7 @@ class ImportStatement extends ImportFile
         $sql .= ', archived=1';
       }
       $sql .= ' WHERE id = ?';
-      mysql_param_query($sql, array($date, $row['id']));
+      mysqli_param_query($sql, array($date, $row['id']));
     }
     $msg = str_replace('{amount}', miscRound2Decim($amount), $GLOBALS['locImportStatementInvoiceMarkedAsPaid']);
     $msg = str_replace('{id}', $row['id'], $msg);
