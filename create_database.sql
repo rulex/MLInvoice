@@ -36,6 +36,7 @@ CREATE TABLE mlinvoice_base (
   email varchar(100) default NULL,
   company_id varchar(15) default NULL,
   org_unit_number varchar(35) default NULL,
+  payment_intermediator varchar(100) default NULL,
   bank_name varchar(50) NOT NULL,
   bank_account varchar(30) NOT NULL,
   bank_iban varchar(50) NOT NULL,
@@ -100,6 +101,7 @@ CREATE TABLE mlinvoice_company (
   info text,
   company_id varchar(15) default NULL,
   org_unit_number varchar(35) default NULL,
+  payment_intermediator varchar(100) default NULL,
   customer_no int(11) default NULL,
   default_ref_number varchar(100) default NULL,
   inactive tinyint NOT NULL default 0,
@@ -263,7 +265,7 @@ CREATE TABLE mlinvoice_state (
 
 SET NAMES 'utf8';
 
-INSERT INTO mlinvoice_state (id, data) VALUES ('version', '29');
+INSERT INTO mlinvoice_state (id, data) VALUES ('version', '30');
 
 INSERT INTO mlinvoice_invoice_state (id, name, order_no) VALUES (1, 'StateOpen', 5);
 INSERT INTO mlinvoice_invoice_state (id, name, order_no) VALUES (2, 'StateSent', 10);
@@ -311,6 +313,7 @@ INSERT INTO mlinvoice_print_template (id, name, filename, parameters, output_fil
 INSERT INTO mlinvoice_print_template (id, name, filename, parameters, output_filename, type, order_no, inactive) VALUES (22, 'PrintOrderConfirmationEmailFinnish', 'invoice_printer_order_confirmation_email.php', 'receipt', 'tilausvahvistus_%d.pdf', 'invoice', 170, 1);
 INSERT INTO mlinvoice_print_template (id, name, filename, parameters, output_filename, type, order_no, inactive) VALUES (23, 'PrintOrderConfirmationEmailSwedish', 'invoice_printer_order_confirmation_email.php', 'receipt,sv-FI', 'orderbekraftelse_%d.pdf', 'invoice', 180, 1);
 INSERT INTO mlinvoice_print_template (id, name, filename, parameters, output_filename, type, order_no, inactive) VALUES (24, 'PrintOrderConfirmationEmailEnglish', 'invoice_printer_order_confirmation_email.php', 'receipt,en', 'order_confirmation_%d.pdf', 'invoice', 190, 1);
+INSERT INTO mlinvoice_print_template (id, name, filename, parameters, output_filename, type, order_no, inactive) VALUES (25, 'PrintFinvoiceSOAP', 'invoice_printer_finvoice_soap.php', '', 'finvoice_%d.xml', 'invoice', 55, 1);
 
 INSERT INTO mlinvoice_users (id, name, email, login, passwd, type_id) VALUES (1, 'Administrator', '', 'admin', md5('admin'), 2);
 
@@ -333,11 +336,11 @@ CREATE INDEX mlinvoice_users_deleted on mlinvoice_users(deleted);
 
 
 -- ***** The following rows just add some sample data *****
-INSERT INTO mlinvoice_base (id, name, contact_person, street_address, zip_code, city, phone, bank_name, bank_account, bank_iban, bank_swiftbic, www, email, company_id) VALUES (1, 'Testilaskuttaja', 'Taavi Testaaja', 'Testitie', '00730', 'HELSINKI', '+358 50 123456', 'Pankki', '123456-654321', 'FI12 3456 7890 1234 56', 'FIHHPANK', 'http://sourceforge.net/', 'emaijala@gmail.com', '123456-7');
+INSERT INTO mlinvoice_base (id, name, contact_person, street_address, zip_code, city, phone, bank_name, bank_account, bank_iban, bank_swiftbic, www, email, company_id) VALUES (1, 'Testilaskuttaja', 'Taavi Testaaja', 'Testitie', '00730', 'HELSINKI', '+358 50 123456', 'Pankki', '123456-654321', 'FI12 3456 7890 1234 56', 'FIHHPANK', 'http://labs.fi/', 'info@labs', '123456-7');
 
-INSERT INTO mlinvoice_company (id, inside_info, type_id, company_name, contact_person, street_address, zip_code, city, phone, fax, email, gsm, billing_address, www, info, company_id) VALUES (1, NULL, NULL, 'Testifirma', NULL, 'Testitie', '00730', 'HELSINKI', '050-123 4567', '-', 'emaijala@gmail.com', '050-123 4567', 'Testifirma\r\nTestitie\r\n00730 HELSINKI', 'www.sourceforge.net', '', 'FI-123456-x');
+INSERT INTO mlinvoice_company (id, inside_info, type_id, company_name, contact_person, street_address, zip_code, city, phone, fax, email, gsm, billing_address, www, info, company_id) VALUES (1, NULL, NULL, 'Testifirma', NULL, 'Testitie', '00730', 'HELSINKI', '050-123 4567', '-', 'info@labs', '050-123 4567', 'Testifirma\r\nTestitie\r\n00730 HELSINKI', 'www.labs.fi', '', 'FI-123456-x');
 
-INSERT INTO mlinvoice_company_contact (id, company_id, contact_person, person_title, email, phone, gsm) VALUES (1, 1, 'Ere Maijala', 'Päällikkö', 'emaijala@gmail.com', '-', '050-123 4567');
+INSERT INTO mlinvoice_company_contact (id, company_id, contact_person, person_title, email, phone, gsm) VALUES (1, 1, 'Ere Maijala', 'Päällikkö', 'info@labs', '-', '050-123 4567');
 
 INSERT INTO mlinvoice_invoice 
   (id, name, company_id, invoice_no, invoice_date, due_date, payment_date, ref_number, state_id, reference, base_id) 

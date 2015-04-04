@@ -51,8 +51,8 @@ case 'company':
   if (getSetting('add_customer_number'))
   {
     $strQuery = 'SELECT max(customer_no) FROM {prefix}company WHERE deleted=0';
-    $intRes = mysql_query_check($strQuery);
-    $defaultCustomerNr = mysql_fetch_value(mysql_query_check($strQuery)) + 1;
+    $intRes = mysqli_query_check($strQuery);
+    $defaultCustomerNr = mysqli_fetch_value(mysqli_query_check($strQuery)) + 1;
   }
 
   $astrFormElements = array(
@@ -63,13 +63,15 @@ case 'company':
     array(
       'name' => 'company_id', 'label' => $GLOBALS['locClientVATID'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
     array(
-      'name' => 'org_unit_number', 'label' => $GLOBALS['locOrgUnitNumber'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
+      'name' => 'email', 'label' => $GLOBALS['locEmail'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
     array(
-      'name' => 'email', 'label' => $GLOBALS['locEmail'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
+      'name' => 'customer_no', 'label' => $GLOBALS['locCustomerNr'], 'type' => 'INT', 'style' => 'medium', 'position' => 1, 'default' => $defaultCustomerNr, 'allow_null' => true ),
     array(
-      'name' => 'customer_no', 'label' => $GLOBALS['locCustomerNr'], 'type' => 'INT', 'style' => 'medium', 'position' => 2, 'default' => $defaultCustomerNr, 'allow_null' => true ),
+      'name' => 'default_ref_number', 'label' => $GLOBALS['locCustomerDefaultRefNr'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
     array(
-      'name' => 'default_ref_number', 'label' => $GLOBALS['locCustomerDefaultRefNr'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
+      'name' => 'org_unit_number', 'label' => $GLOBALS['locOrgUnitNumber'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
+    array(
+      'name' => 'payment_intermediator', 'label' => $GLOBALS['locPaymentIntermediator'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
     array(
       'name' => 'delivery_terms_id', 'label' => $GLOBALS['locDeliveryTerms'], 'type' => 'LIST', 'style' => 'medium', 'listquery' => 'SELECT id, name FROM {prefix}delivery_terms WHERE deleted=0 ORDER BY order_no;', 'position' => 1, 'default' => null, 'allow_null' => true ),
     array(
@@ -172,12 +174,12 @@ case 'invoice':
       'SELECT refunded_invoice_id '.
       'FROM {prefix}invoice '.
       'WHERE id=?'; // ok to maintain links to deleted invoices too
-    $intRes = mysql_param_query($strQuery, array($intInvoiceId));
+    $intRes = mysqli_param_query($strQuery, array($intInvoiceId));
     $strBaseLink = '?' . preg_replace('/&id=\d*/', '', $_SERVER['QUERY_STRING']);
     $strBaseLink = preg_replace('/&/', '&amp;', $strBaseLink);
     if ($intRes)
     {
-      $intRefundedInvoiceId = mysql_fetch_value($intRes);
+      $intRefundedInvoiceId = mysqli_fetch_value($intRes);
       if ($intRefundedInvoiceId)
         $arrRefundedInvoice = array(
          'name' => 'get', 'label' => $GLOBALS['locShowRefundedInvoice'], 'type' => 'BUTTON', 'style' => 'custom', 'listquery' => "$strBaseLink&amp;id=$intRefundedInvoiceId", 'position' => 2, 'allow_null' => true
@@ -187,8 +189,8 @@ case 'invoice':
       'SELECT id '.
       'FROM {prefix}invoice '.
       'WHERE deleted=0 AND refunded_invoice_id=?';
-    $intRes = mysql_param_query($strQuery, array($intInvoiceId));
-    if ($intRes && ($row = mysql_fetch_assoc($intRes)))
+    $intRes = mysqli_param_query($strQuery, array($intInvoiceId));
+    if ($intRes && ($row = mysqli_fetch_assoc($intRes)))
     {
       $intRefundingInvoiceId = $row['id'];
       if ($intRefundingInvoiceId)
@@ -287,11 +289,11 @@ EOS;
   // Print buttons
   $printButtons = array();
   $printButtons2 = array();
-  $res = mysql_query_check('SELECT * FROM {prefix}print_template WHERE deleted=0 and type=\'invoice\' and inactive=0 ORDER BY order_no');
-  $templateCount = mysql_num_rows($res);
+  $res = mysqli_query_check('SELECT * FROM {prefix}print_template WHERE deleted=0 and type=\'invoice\' and inactive=0 ORDER BY order_no');
+  $templateCount = mysqli_num_rows($res);
   $templateFirstCol = max(floor($templateCount / 2 + 1), 3);
   $rowNum = 0;
-  while ($row = mysql_fetch_assoc($res))
+  while ($row = mysqli_fetch_assoc($res))
   {
     $templateId = $row['id'];
     $printStyle = $row['new_window'] ? 'openwindow' : 'redirect';
@@ -331,9 +333,9 @@ EOS;
     $companyListSelect .= " OR id IN (SELECT company_id FROM {prefix}invoice i WHERE i.id=$intInvoiceId)";
   $companyListSelect .= ') ORDER BY company_name, company_id';
 
-  $intRes = mysql_query_check('SELECT ID from {prefix}base WHERE deleted=0');
-  if (mysql_num_rows($intRes) == 1)
-    $defaultBase = mysql_fetch_value($intRes);
+  $intRes = mysqli_query_check('SELECT ID from {prefix}base WHERE deleted=0');
+  if (mysqli_num_rows($intRes) == 1)
+    $defaultBase = mysqli_fetch_value($intRes);
   else
     $defaultBase = FALSE;
 
@@ -535,10 +537,12 @@ EOF;
     array(
       'name' => 'company_id', 'label' => $GLOBALS['locClientVATID'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
     array(
+      'name' => 'vat_registered', 'label' => $GLOBALS['locVATRegistered'], 'title' => $GLOBALS['locVATRegisteredHint'], 'type' => 'CHECK', 'style' => 'short', 'position' => 1, 'allow_null' => true ),
+    array(
       'name' => 'org_unit_number', 'label' => $GLOBALS['locOrgUnitNumber'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
-    array(
-      'name' => 'vat_registered', 'label' => $GLOBALS['locVATRegistered'], 'title' => $GLOBALS['locVATRegisteredHint'], 'type' => 'CHECK', 'style' => 'short', 'position' => 2, 'allow_null' => true ),
-    array(
+  	array(
+      'name' => 'payment_intermediator', 'label' => $GLOBALS['locPaymentIntermediator'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),
+  	array(
       'name' => 'contact_person', 'label' => $GLOBALS['locContactPerson'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 1, 'allow_null' => true ),
     array(
       'name' => 'email', 'label' => $GLOBALS['locEmail'], 'type' => 'TEXT', 'style' => 'medium', 'position' => 2, 'allow_null' => true ),

@@ -50,7 +50,7 @@ function createSettingsList()
       {
         if (!$elem['allow_null'])
         {
-          $messages .= $GLOBALS['ErrValueMissing'] . ": '$label'<br>\n";
+          $messages .= $GLOBALS['locErrValueMissing'] . ": '$label'<br>\n";
           continue;
         }
         else
@@ -71,8 +71,8 @@ function createSettingsList()
 
       if (isset($elem['session']) && $elem['session'])
         $_SESSION[$name] = $newValue;
-      mysql_param_query('DELETE from {prefix}settings WHERE name=?', array($name));
-      mysql_param_query('INSERT INTO {prefix}settings (name, value) VALUES (?, ?)', array($name, $newValue));
+      mysqli_param_query('DELETE from {prefix}settings WHERE name=?', array($name));
+      mysqli_param_query('INSERT INTO {prefix}settings (name, value) VALUES (?, ?)', array($name, $newValue));
     }
   }
 ?>
@@ -123,8 +123,8 @@ function createSettingsList()
         }
         else
         {
-          $res = mysql_param_query('SELECT value from {prefix}settings WHERE name=?', array($name));
-          if ($row = mysql_fetch_assoc($res))
+          $res = mysqli_param_query('SELECT value from {prefix}settings WHERE name=?', array($name));
+          if ($row = mysqli_fetch_assoc($res))
             $value = $row['value'];
           else
             $value = isset($elem['default']) ? cond_utf8_decode($elem['default']) : '';

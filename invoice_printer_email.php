@@ -94,12 +94,8 @@ class InvoicePrinterEmail extends InvoicePrinterBase
       'X-Mailer' => 'MLInvoice',
     );
 
-
     $filename = $this->outputFileName ? $this->outputFileName : getSetting('invoice_pdf_filename');
-    // Replace the %d style placeholder
-    $filename = sprintf($filename, $invoiceData['invoice_no']);
-    // Handle additional placeholders
-    $filename = $this->replacePlaceholders($filename);
+    $filename = $this->getPrintOutFileName($filename);
     $data = $pdf->Output($filename, 'E');
 
     $messageBody = 'This is a multipart message in mime format.' . PHP_EOL . PHP_EOL;
@@ -118,7 +114,7 @@ class InvoicePrinterEmail extends InvoicePrinterBase
     if ($result && $invoiceData['state_id'] == 1)
     {
       // Mark invoice sent
-      mysql_param_query('UPDATE {prefix}invoice SET state_id=2 WHERE id=?', array($this->invoiceId));
+      mysqli_param_query('UPDATE {prefix}invoice SET state_id=2 WHERE id=?', array($this->invoiceId));
     }
     if ($result) {
       $_SESSION['formMessage'] = 'EmailSent';
