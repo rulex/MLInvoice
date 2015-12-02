@@ -26,6 +26,7 @@ class InvoicePrinterFinvoice extends InvoicePrinterXSLT
     parent::transform('create_finvoice.xsl', 'Finvoice.xsd');
     header('Content-Type: text/xml');
     $filename = $this->getPrintoutFileName();
+    header( 'Content-Type:text/xml;charset=ISO-8859-15' );
     if ($this->printStyle)
     {
       header("Content-Disposition: inline; filename=$filename");
