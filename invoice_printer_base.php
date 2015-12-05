@@ -49,7 +49,7 @@ abstract class InvoicePrinterBase
     protected $totalVAT = 0;
     protected $totalSumVAT = 0;
     protected $discountedRows = false;
-    protected $groupedVATs = [];
+    protected $groupedVATs = array();
     protected $recipientMaxY = 0;
     protected $invoiceRowMaxY = 150;
     protected $addressXOffset = 0;
@@ -266,10 +266,11 @@ abstract class InvoicePrinterBase
         $pdf = new PDF('P', 'mm', 'A4', _CHARSET_ == 'UTF-8', _CHARSET_, false);
         $pdf->AddPage();
         $pdf->SetAutoPageBreak(FALSE);
-        $pdf->footerLeft = $this->senderAddressLine;
-        $pdf->footerCenter = $this->senderContactInfo;
-        $pdf->footerRight = $this->senderData['www'] . "\n" .
-             $this->senderData['email'];
+        $pdf->footerLeft = "\n" . $this->senderAddressLine;
+        $pdf->footerCenter = $this->senderContactInfo . "\n" . $this->senderData['email'];
+        //$pdf->footerRight = $this->senderData['www'] . "\n" .  $this->senderData['email'];
+        // XXX hinj reklamation text
+        $pdf->footerRight = "Mahdollinen reklamaatio tulee ilmoittaa lähettäjälle viimeistään 24 tuntia tavaran vastaanottamisesta" . "\n" . "Möjlig reklamation bör meddelas avsändaren senast inom 24 timmar efter att varan mottagits" ;
         $this->pdf = $pdf;
     }
 
@@ -361,6 +362,10 @@ abstract class InvoicePrinterBase
         $pdf->SetFont('Helvetica', '', 10);
         $pdf->SetXY(115, $pdf->GetY() + 5);
         if ($recipientData['customer_no'] != 0) {
+            $pdf->SetX(115);
+            $pdf->Cell(40, 5, 'Asiakas Kund' . ': ', 0, 0, 'R');
+            $pdf->Cell(60, 5, $recipientData['company_name'], 0, 1);
+            $pdf->SetX(115);
             $pdf->Cell(40, 4, $GLOBALS['locPDFCustomerNumber'] . ': ', 0, 0, 'R');
             $pdf->Cell(60, 4, $recipientData['customer_no'], 0, 1);
         }
@@ -374,7 +379,9 @@ abstract class InvoicePrinterBase
         $pdf->Cell(60, 4, $invoiceData['invoice_no'], 0, 1);
         $pdf->SetX(115);
         $pdf->Cell(40, 4, $GLOBALS["locPDF${locStr}Date"] . ': ', 0, 0, 'R');
-        $strInvoiceDate = $this->_formatDate($invoiceData['invoice_date']);
+        //$strInvoiceDate = $this->_formatDate($invoiceData['invoice_date']);
+        // XXX hinj, when date is select
+        $strInvoiceDate = ( $this->date ) ? $this->_formatDate( $this->date ) : $this->_formatDate($invoiceData['invoice_date']);
         $strDueDate = $this->_formatDate($invoiceData['due_date']);
         $pdf->Cell(60, 4, $strInvoiceDate, 0, 1);
         if ($this->printStyle == 'invoice') {
@@ -508,15 +515,17 @@ abstract class InvoicePrinterBase
         $pdf->SetX($left);
         if ($showDate) {
             $pdf->Cell($nameColWidth - 20, 5, $GLOBALS['locPDFRowName'], 0, 0, 'L');
-            $pdf->Cell(20, 5, $GLOBALS['locPDFRowDate'], 0, 0, 'L');
+            $pdf->Cell(25, 5, $GLOBALS['locPDFRowDate'], 0, 0, 'L');
         } else {
             $pdf->Cell($nameColWidth, 5, $GLOBALS['locPDFRowName'], 0, 0, 'L');
         }
-        if ($this->printStyle != 'dispatch') {
+        //if ($this->printStyle != 'dispatch') {
+            // XXX hinj, removed extra columns
+            $pdf->MultiCell(20, 5, $GLOBALS['locPDFRowTotalVATLess'], 0, 'R', 0, 0);
             $pdf->Cell(17, 5, $GLOBALS['locPDFRowPrice'], 0, 0, 'R');
             if ($this->discountedRows)
                 $pdf->Cell(12, 5, $GLOBALS['locPDFRowDiscount'], 0, 0, 'R');
-        }
+        //}
         $pdf->Cell(20, 5, $GLOBALS['locPDFRowPieces'], 0, 0, 'R');
         if ($this->printStyle != 'dispatch') {
             if ($this->senderData['vat_registered']) {
@@ -580,6 +589,16 @@ abstract class InvoicePrinterBase
                 if ($row['vat_included'])
                     $row['price'] /= (1 + $row['vat'] / 100);
             }
+            // XXX hinj, both vat & non-vat prices
+            if ($row['vat_included']) {
+                //$row['price'] /= (1 + $row['vat'] / 100);
+                $vat_incl_price = $row['price'];
+                $vat_incl_price *= (1 + $row['vat'] / 100);
+            }
+            else {
+                $vat_incl_price = $row['price'];
+                $vat_incl_price /= ( 1 + $row['vat'] / 100 );
+            }
 
             if ($row['price'] == 0 && $row['pcs'] == 0) {
                 $pdf->SetX($left);
@@ -600,6 +619,10 @@ abstract class InvoicePrinterBase
                         $pdf->Cell(12, 5,
                             (isset($row['discount']) && $row['discount'] != '0') ? $this->_formatCurrency(
                                 $row['discount'], 2, true) : '', 0, 0, 'R');
+                }
+                else if ($this->printStyle == 'dispatch') { // XXX
+                  $pdf->Cell(20, 5, $this->_formatCurrency( $row['price'] ), 0, 0, 'R');
+                  $pdf->Cell(20, 5, $this->_formatCurrency( $vat_incl_price ), 0, 0, 'R');
                 }
                 $pdf->Cell(13, 5, $partial ? '' : $this->_formatNumber($row['pcs'], 2, true), 0, 0,
                     'R');
@@ -729,6 +752,7 @@ abstract class InvoicePrinterBase
                 $GLOBALS['locPDFVirtualBarcode'] . ': ' . $this->barcode, 0, 1, 'L');
         }
         $intStartY = 187;
+        // XXX hinj, added reklamation requirement text
         $pdf->SetXY(4, $intStartY);
         $pdf->MultiCell(120, 5, $this->senderAddressLine, 0, 'L', 0);
         $pdf->SetXY(75, $intStartY);
