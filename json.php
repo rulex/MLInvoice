@@ -76,6 +76,10 @@ case 'get_companies' :
     printJSONRecords('company', '', 'company_name');
     break;
 
+case 'get_invoice_dates':
+  printInvoiceDates('invoice_row', 'invoice_id', 'order_no');
+  break;
+
 case 'get_company_contacts' :
     printJSONRecords('company_contact', 'company_id', 'contact_person');
     break;
@@ -99,10 +103,6 @@ case 'get_row_types' :
 case 'get_invoice_rows' :
     printJSONRecords('invoice_row', 'invoice_id', 'order_no');
     break;
-
-case 'get_invoice_dates':
-  printInvoiceDates('invoice_row', 'invoice_id', 'order_no');
-  break;
 
 case 'put_invoice_row' :
     saveJSONRecord('invoice_row', 'invoice_id');
@@ -437,44 +437,6 @@ function printJSONRecord($table, $id = FALSE, $warnings = null)
     }
 }
 
-function printInvoiceDates( $table, $parentIdCol, $sort ) {
-  $query = "SELECT row_date FROM {prefix}$table";
-  $where = '';
-  $params = array();
-  $id = getRequest('parent_id', '');
-  if( $id && $parentIdCol ) {
-    $where .= " WHERE $parentIdCol=?";
-    $params[] = $id;
-  }
-  if( !getSetting('show_deleted_records' ) ) {
-    if( $where )
-      $where .= " AND deleted=0";
-    else
-      $where = " WHERE deleted=0";
-  }
-  $query .= $where;
-	$query .= " group by row_date ";
-  if( $sort )
-    $query .= " order by $sort";
-
-  $res = mysqli_param_query( $query, $params );
-  header( 'Content-Type: application/json' );
-  echo "{\"records\":[";
-  $first = true;
-  while ($row = mysqli_fetch_assoc($res)) {
-    if ($first) {
-      echo "\n";
-      $first = false;
-    }
-    else
-      echo ",\n";
-    if ($table == 'users')
-      unset($row['password']);
-    echo json_encode($row);
-  }
-  echo "\n]}";
-}
-
 function printJSONRecords($table, $parentIdCol, $sort)
 {
     $select = 'SELECT t.*';
@@ -525,6 +487,44 @@ function printJSONRecords($table, $parentIdCol, $sort)
                 $row['type_id_text'] = $GLOBALS['loc' . $row['type_id_text']];
             }
         }
+        echo json_encode($row);
+    }
+    echo "\n]}";
+}
+
+function printInvoiceDates( $table, $parentIdCol, $sort ) {
+    $query = "SELECT row_date FROM {prefix}$table";
+    $where = '';
+    $params = array();
+    $id = getRequest('parent_id', '');
+    if( $id && $parentIdCol ) {
+        $where .= " WHERE $parentIdCol=?";
+        $params[] = $id;
+    }
+    if( !getSetting('show_deleted_records' ) ) {
+        if( $where )
+            $where .= " AND deleted=0";
+        else
+            $where = " WHERE deleted=0";
+    }
+    $query .= $where;
+    $query .= " group by row_date ";
+    if( $sort )
+        $query .= " order by $sort";
+
+    $res = mysqli_param_query( $query, $params );
+    header( 'Content-Type: application/json' );
+    echo "{\"records\":[";
+    $first = true;
+    while ($row = mysqli_fetch_assoc($res)) {
+        if ($first) {
+            echo "\n";
+            $first = false;
+        }
+        else
+            echo ",\n";
+        if ($table == 'users')
+            unset($row['password']);
         echo json_encode($row);
     }
     echo "\n]}";

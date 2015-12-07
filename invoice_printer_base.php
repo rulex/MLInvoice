@@ -49,7 +49,7 @@ abstract class InvoicePrinterBase
     protected $totalVAT = 0;
     protected $totalSumVAT = 0;
     protected $discountedRows = false;
-    protected $groupedVATs = array();
+    protected $groupedVATs = [];
     protected $recipientMaxY = 0;
     protected $invoiceRowMaxY = 150;
     protected $addressXOffset = 0;
@@ -515,17 +515,16 @@ abstract class InvoicePrinterBase
         $pdf->SetX($left);
         if ($showDate) {
             $pdf->Cell($nameColWidth - 20, 5, $GLOBALS['locPDFRowName'], 0, 0, 'L');
-            $pdf->Cell(25, 5, $GLOBALS['locPDFRowDate'], 0, 0, 'L');
+            $pdf->Cell(20, 5, $GLOBALS['locPDFRowDate'], 0, 0, 'L');
         } else {
             $pdf->Cell($nameColWidth, 5, $GLOBALS['locPDFRowName'], 0, 0, 'L');
         }
-        //if ($this->printStyle != 'dispatch') {
-            // XXX hinj, removed extra columns
-            $pdf->MultiCell(20, 5, $GLOBALS['locPDFRowTotalVATLess'], 0, 'R', 0, 0);
+        // XXX hinj, removed extra columns
+        if ($this->printStyle != 'dispatch') {
             $pdf->Cell(17, 5, $GLOBALS['locPDFRowPrice'], 0, 0, 'R');
             if ($this->discountedRows)
                 $pdf->Cell(12, 5, $GLOBALS['locPDFRowDiscount'], 0, 0, 'R');
-        //}
+        }
         $pdf->Cell(20, 5, $GLOBALS['locPDFRowPieces'], 0, 0, 'R');
         if ($this->printStyle != 'dispatch') {
             if ($this->senderData['vat_registered']) {
@@ -589,6 +588,7 @@ abstract class InvoicePrinterBase
                 if ($row['vat_included'])
                     $row['price'] /= (1 + $row['vat'] / 100);
             }
+
             // XXX hinj, both vat & non-vat prices
             if ($row['vat_included']) {
                 //$row['price'] /= (1 + $row['vat'] / 100);
@@ -752,7 +752,6 @@ abstract class InvoicePrinterBase
                 $GLOBALS['locPDFVirtualBarcode'] . ': ' . $this->barcode, 0, 1, 'L');
         }
         $intStartY = 187;
-        // XXX hinj, added reklamation requirement text
         $pdf->SetXY(4, $intStartY);
         $pdf->MultiCell(120, 5, $this->senderAddressLine, 0, 'L', 0);
         $pdf->SetXY(75, $intStartY);

@@ -114,5 +114,5 @@ if (sesWriteAccess()) {
 
 $printer = instantiateInvoicePrinter(trim($printTemplateFile));
 $printer->init($intInvoiceId, $printParameters, $printOutputFileName, $senderData,
-    $recipientData, $invoiceData, $invoiceRowData, $receiptDate, $date);
+    $recipientData, $invoiceData, $invoiceRowData, $receiptDate);
 $printer->printInvoice();

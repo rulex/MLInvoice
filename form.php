@@ -240,25 +240,21 @@ function createForm($strFunc, $strList, $strForm)
             <?php echo htmlFormElement($elem['name'], $elem['type'], $astrValues[$elem['name']], $elem['style'], $elem['listquery'], $fieldMode, $elem['parent_key'],$elem['label'], [], isset($elem['elem_attributes']) ? $elem['elem_attributes'] : '', isset($elem['options']) ? $elem['options'] : null)?>
           </td>
 <?php
-    }
-    elseif ($elem['type'] == "IFORM")
-    {
-      if ($rowOpen)
-        echo "        </tr>\n";
-      echo "      </table>\n      </form>\n";
-      echo '<div id="datebuttons"></div>';
-      $haveChildForm = true;
-      createIForm($astrFormElements, $elem, isset($intKeyValue) ? $intKeyValue : 0, $blnNew, $strForm);
-      break;
-    }
-    else
-    {
-      $value = $astrValues[$elem['name']];
-      if ($elem['style'] == 'measurement')
-        $value = $value ? miscRound2Decim($value, 2) : '';
-      if ($elem['type'] == 'AREA')
-      {
-?>
+        } elseif ($elem['type'] == 'IFORM') {
+            if ($rowOpen)
+                echo "        </tr>\n";
+            echo "      </table>\n      </form>\n";
+            echo '<div id="datebuttons"></div>';
+            $haveChildForm = true;
+            createIForm($astrFormElements, $elem,
+                isset($intKeyValue) ? $intKeyValue : 0, $blnNew, $strForm);
+            break;
+        } else {
+            $value = $astrValues[$elem['name']];
+            if ($elem['style'] == 'measurement')
+                $value = $value ? miscRound2Decim($value, 2) : '';
+            if ($elem['type'] == 'AREA') {
+                ?>
           <td class="toplabel"><?php echo $elem['label']?></td>
 <?php
             } else {
@@ -369,8 +365,7 @@ $(document).ready(function() {
 	} );
 <?php } ?>
 <?php
-  if ($strMessage)
-  {
+  if ($strMessage) {
 ?>
   showmsg("<?php echo $strMessage?>");
 <?php
